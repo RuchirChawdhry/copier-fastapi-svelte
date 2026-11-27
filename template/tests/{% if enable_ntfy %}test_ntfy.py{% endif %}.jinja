@@ -1,0 +1,34 @@
+import json
+
+import httpx
+import pytest
+
+from app.config import Settings
+from app.ntfy import publish
+
+
+def test_publish_explicit_message():
+    def handler(request):
+        assert request.method == "POST"
+        assert request.url == "https://ntfy.example/"
+        assert request.headers["Authorization"] == "Bearer test-token"
+        assert json.loads(request.content) == {
+            "topic": "private-topic", "message": "Job complete", "title": "Example",
+        }
+        return httpx.Response(200)
+
+    settings = Settings(ntfy_url="https://ntfy.example", ntfy_topic="private-topic", ntfy_token="test-token")
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        publish(client, settings, "Job complete", "Example")
+
+
+def test_requires_configuration():
+    with httpx.Client() as client, pytest.raises(ValueError, match="APP_NTFY_URL"):
+        publish(client, Settings(ntfy_url=None, ntfy_topic=None), "Message", "Title")
+
+
+def test_http_failure_is_not_silent():
+    settings = Settings(ntfy_url="https://ntfy.example", ntfy_topic="private-topic")
+    with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(403))) as client:
+        with pytest.raises(httpx.HTTPStatusError):
+            publish(client, settings, "Message", "Title")

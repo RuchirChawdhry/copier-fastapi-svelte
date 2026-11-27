@@ -2,6 +2,25 @@ version: '3'
 tasks:
   default:
     cmds: [task --list-all]
+  doctor:
+    desc: Inspect prerequisites and development environment (no installation)
+    silent: true
+    cmds:
+      - |
+        if command -v python >/dev/null 2>&1; then
+          python scripts/doctor.py {% raw %}{{.CLI_ARGS}}{% endraw +%}
+        elif command -v python3 >/dev/null 2>&1; then
+          python3 scripts/doctor.py {% raw %}{{.CLI_ARGS}}{% endraw +%}
+        else
+          uv run --no-project --no-python-downloads python scripts/doctor.py {% raw %}{{.CLI_ARGS}}{% endraw +%}
+        fi
+  doctor:json:
+    desc: Machine-readable development environment diagnostics
+    silent: true
+    cmds:
+      - task: doctor
+        vars:
+          CLI_ARGS: --json
   install:
     desc: Install backend and frontend dependencies
     cmds:
@@ -150,7 +169,7 @@ tasks:
       - task: ui:check
   api:check-code:
     cmds:
-      - uv run ruff check app tests
+      - uv run ruff check app tests scripts
       - uv run ty check app
   ui:check:
     dir: frontend
@@ -160,8 +179,8 @@ tasks:
       - pnpm check
   fix:
     cmds:
-      - uv run ruff check --fix app tests
-      - uv run ruff format app tests
+      - uv run ruff check --fix app tests scripts
+      - uv run ruff format app tests scripts
       - task: api:generate
       - task: ui:fix
   ui:fix:
@@ -212,6 +231,12 @@ tasks:
     dir: frontend
     cmds:
       - pnpm format
+{% if enable_ntfy %}
+  ntfy:send:
+    desc: Send an explicit push notification (message and optional --title after --)
+    cmds:
+      - uv run python -m app.cli send-notification {% raw %}{{.CLI_ARGS}}{% endraw +%}
+{% endif %}
 {% if enable_rss %}
   rss:publish:
     desc: Publish an RSS announcement (title, description and optional --link after --)

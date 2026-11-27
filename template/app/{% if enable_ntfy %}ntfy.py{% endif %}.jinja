@@ -1,0 +1,23 @@
+import httpx
+
+from .config import Settings, get_settings
+
+
+def publish(client: httpx.Client, settings: Settings, message: str, title: str) -> None:
+    """Send only an explicitly supplied message to the configured ntfy server."""
+    if not settings.ntfy_url or not settings.ntfy_topic:
+        raise ValueError("Set APP_NTFY_URL and APP_NTFY_TOPIC before publishing.")
+    headers = {}
+    if settings.ntfy_token:
+        headers["Authorization"] = "Bearer " + settings.ntfy_token.get_secret_value()
+    response = client.post(
+        str(settings.ntfy_url),
+        json={"topic": settings.ntfy_topic, "message": message, "title": title},
+        headers=headers,
+    )
+    response.raise_for_status()
+
+
+def notify(message: str, title: str = {{ project_name | tojson }}) -> None:
+    with httpx.Client(timeout=10) as client:
+        publish(client, get_settings(), message, title)

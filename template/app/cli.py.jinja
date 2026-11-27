@@ -35,6 +35,17 @@ def openapi(output: Path = Path("frontend/openapi.json")) -> None:
     output.write_text(json.dumps(app.openapi(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+{% if enable_ntfy %}
+@cli.command
+def send_notification(message: str, *, title: str = {{ project_name | tojson }}) -> None:
+    """Send an explicit ntfy push notification."""
+    from .ntfy import notify
+
+    notify(message, title)
+    print("Notification sent")
+
+
+{% endif %}
 {% if enable_rss %}
 @cli.command
 def publish_feed(title: str, description: str, *, link: str | None = None) -> None:

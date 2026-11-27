@@ -1,7 +1,9 @@
 from functools import lru_cache
 from pathlib import Path
 
-{% if enable_rss %}
+{% if enable_ntfy %}
+from pydantic import HttpUrl, SecretStr
+{% elif enable_rss %}
 from pydantic import HttpUrl
 {% endif %}
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,6 +12,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="APP_", extra="ignore")
     database: Path = Path("data/app.sqlite3")
+{% if enable_ntfy %}
+    ntfy_url: HttpUrl | None = None
+    ntfy_topic: str | None = None
+    ntfy_token: SecretStr | None = None
+{% endif %}
 {% if enable_rss %}
     public_url: HttpUrl = HttpUrl("http://127.0.0.1:8080")
 {% endif %}

@@ -10,3 +10,5 @@ Includes the command palette and context menu with icons, settings switches, Tan
 
 - `12-navigation-menu.png` — the open Resources navigation dropdown, including the header settings gear.
 - `13-date-range-popover.png` — creation-date filter and range calendar; pagination and scroll area appear in the existing overview.
+
+Each image is an independently runnable scenario; use `task screenshots -- --grep 12-navigation-menu` in a generated project, or `--grep theme-` for the theme group. A failed test does not suppress other tests. CI uploads fresh successful captures even on failure and publishes the complete set to Git only when validation passes and the captured template is still current.

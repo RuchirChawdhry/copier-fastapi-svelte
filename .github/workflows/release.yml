@@ -28,6 +28,13 @@ jobs:
         with:
           version: 3.x
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+        with:
+          enable-cache: true
+          cache-suffix: release
+          cache-dependency-glob: |
+            template/pyproject.toml.jinja
+            template/.python-version
+            Taskfile.yml
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: template/frontend/.node-version
@@ -54,31 +61,43 @@ jobs:
         run: |
           task test
           task release:verify-locks
-      - name: Validate minimal locked application
+      - name: Render minimal locked application
         run: |
           task render -- --defaults . generated
           cd generated
           sha256sum uv.lock frontend/pnpm-lock.yaml > "$RUNNER_TEMP/minimal-locks.sha256"
-          task install
-          task ui:format
+      - name: Install minimal locked application
+        uses: ./.github/actions/setup-cached-project
+        with:
+          project-path: generated
+          bootstrap: 'false'
+          format: 'true'
+      - name: Validate minimal locked application
+        working-directory: generated
+        run: |
           task check
           task test:ci
           task build
-          task browser:install
           task test:e2e:ci
           sha256sum --check "$RUNNER_TEMP/minimal-locks.sha256"
-      - name: Validate fully enabled locked application
+      - name: Render fully enabled locked application
         run: |
           task render -- --defaults -d enable_jobs=true -d enable_events=true -d enable_mcp=true -d enable_rss=true -d enable_ntfy=true -d enable_schema_forms=true -d enable_terminal=true . generated-full
           cd generated-full
           sha256sum uv.lock frontend/pnpm-lock.yaml > "$RUNNER_TEMP/full-locks.sha256"
-          task install
-          task ui:format
+      - name: Install fully enabled locked application
+        uses: ./.github/actions/setup-cached-project
+        with:
+          project-path: generated-full
+          bootstrap: 'false'
+          format: 'true'
+      - name: Validate fully enabled locked application
+        working-directory: generated-full
+        run: |
           task jobs:redis
           task check
           task test:ci
           task build
-          task browser:install
           task test:e2e:ci
           sha256sum --check "$RUNNER_TEMP/full-locks.sha256"
       - name: Publish version tag and GitHub release

@@ -198,7 +198,7 @@ tasks:
     desc: Capture real browser screenshots
     dir: frontend
     cmds:
-      - pnpm exec playwright test --config playwright.screenshots.config.ts
+      - pnpm exec playwright test --config playwright.screenshots.config.ts {% raw %}{{.CLI_ARGS}}{% endraw +%}
   check:
     cmds:
       - task: api:check-code

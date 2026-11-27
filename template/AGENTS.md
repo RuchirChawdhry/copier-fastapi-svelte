@@ -33,3 +33,5 @@
 - Keep App.svelte as composition only. Pages belong in frontend/src/pages; shell navigation, header and command palette in lib/shell; settings sections in lib/settings; domain UI and query coordination in lib/features. Add page metadata in lib/shell/navigation.ts and reuse PageNavigation and CommandPalette. Preserve conditional Copier features when moving files.
 
 - Use locked installs; do not regenerate lockfiles to fix unrelated failures. Run task deps:check, and use task deps:lock only for deliberate dependency changes. Commit both uv.lock and frontend/pnpm-lock.yaml.
+
+- Use exact Playwright role/name, text and placeholder selectors; scope repeated elements to their owning component instead of using first()/nth() to conceal ambiguity. Regex selectors are reserved for genuinely dynamic text. Keep screenshots independently runnable with one named test per image and an isolated screenshot database. Use task screenshots -- --grep <scenario> for targeted captures.

@@ -20,6 +20,13 @@ jobs:
         with:
           version: 3.x
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+        with:
+          enable-cache: true
+          cache-suffix: preflight
+          cache-dependency-glob: |
+            template/pyproject.toml.jinja
+            template/.python-version
+            Taskfile.yml
       - name: Render and lint all 128 feature combinations
         run: task test
   validate:
@@ -81,6 +88,13 @@ jobs:
         with:
           version: 3.x
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: true
+          cache-suffix: validation-${{ matrix.jobs }}-${{ matrix.events }}-${{ matrix.mcp }}-${{ matrix.rss }}-${{ matrix.ntfy || false }}
+          cache-dependency-glob: |
+            template/pyproject.toml.jinja
+            template/.python-version
+            Taskfile.yml
       - name: Render selected variant
         env:
           JOBS: ${{ matrix.jobs }}
@@ -95,14 +109,12 @@ jobs:
         with:
           node-version-file: generated/frontend/.node-version
           package-manager-cache: false
-      - name: Install dependencies
+      - name: Install dependencies using caches
         id: install
-        working-directory: generated
-        run: |
-          task -d .. tools:setup
-          task deps:bootstrap
-          task install
-          task ui:format
+        uses: ./.github/actions/setup-cached-project
+        with:
+          project-path: generated
+          format: 'true'
       - name: Start Redis
         if: matrix.jobs
         working-directory: generated
@@ -123,7 +135,6 @@ jobs:
       - name: Browser tests
         working-directory: generated
         run: |
-          task browser:install
           task test:e2e:ci
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()

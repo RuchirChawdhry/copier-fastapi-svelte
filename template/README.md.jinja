@@ -50,7 +50,7 @@ The optional /api/events SSE stream sends only a note revision on connection and
 
 ## Screenshots
 
-Run task screenshots after installing Chromium. The Playwright capture suite saves real PNGs in screenshots/ using a dedicated test database. The source template has a manual Screenshots workflow to publish images.
+Run `task screenshots` after installing Chromium. Each PNG is a separate Playwright scenario with a fresh browser context and reset fixture notes in data/screenshots.sqlite3. Run `task screenshots -- --grep 12-navigation-menu` for a single image or `task screenshots -- --grep theme-` for themes. Successful captures are uploaded even if another scenario fails; the source workflow publishes to Git only after a successful suite.
 
 ## API contract and frontend checks
 

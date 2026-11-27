@@ -22,16 +22,16 @@
       <Navigation.Trigger>Resources</Navigation.Trigger>
       <Navigation.Content>
         <ul class="grid w-72 gap-1">
-          {#each resources as resource (resource.href)}
+          {#each resources as resource, index (resource.href)}
             <li>
               <Navigation.Link>
                 {#snippet child({ props })}
-                  <a {...props} href={resource.href} target="_blank" rel="noopener noreferrer">
+                  <a {...props} href={resource.href} aria-label={resource.title} aria-describedby={'resource-description-' + index} target="_blank" rel="noopener noreferrer">
                     <div class="flex gap-3">
                       <resource.icon aria-hidden="true" class="mt-0.5 size-4 shrink-0" />
                       <div class="space-y-1">
                         <div class="font-medium">{resource.title}</div>
-                        <div class="text-xs text-muted-foreground">{resource.description}</div>
+                        <div id={'resource-description-' + index} class="text-xs text-muted-foreground">{resource.description}</div>
                       </div>
                     </div>
                   </a>

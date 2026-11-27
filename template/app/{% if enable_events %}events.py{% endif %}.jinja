@@ -1,0 +1,16 @@
+import asyncio
+import json
+from collections.abc import AsyncGenerator
+
+from .db import Database
+
+
+async def note_events(database: Database) -> AsyncGenerator[dict[str, str]]:
+    previous = None
+    while True:
+        payload = json.dumps(await asyncio.to_thread(database.notes))
+        if payload != previous:
+            yield {"event": "notes", "data": payload}
+            previous = payload
+        await asyncio.sleep(1)
+

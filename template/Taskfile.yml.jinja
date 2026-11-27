@@ -57,6 +57,11 @@ tasks:
     dir: frontend
     cmds:
       - pnpm exec playwright test
+  screenshots:
+    desc: Capture real browser screenshots
+    dir: frontend
+    cmds:
+      - pnpm exec playwright test --config playwright.screenshots.config.ts
   check:
     cmds:
       - uv run ruff check app tests

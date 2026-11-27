@@ -1,0 +1,21 @@
+import asyncio
+import json
+
+from app.db import Database
+from app.events import note_events
+
+
+def test_events_follow_database_changes(tmp_path):
+    async def check():
+        database = Database(tmp_path / "events.sqlite3")
+        database.initialize()
+        stream = note_events(database)
+        try:
+            assert json.loads((await anext(stream))["data"]) == []
+            database.add_note("Event")
+            assert json.loads((await anext(stream))["data"])[0]["text"] == "Event"
+        finally:
+            await stream.aclose()
+
+    asyncio.run(check())
+

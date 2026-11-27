@@ -2,26 +2,21 @@ import subprocess
 import sys
 import time
 
-from fastapi.testclient import TestClient
 
-from app.api import app
-
-
-def test_background_note():
-    with TestClient(app) as client:
-        worker = subprocess.Popen(
-            [sys.executable, "-m", "taskiq", "worker", "app.jobs:broker", "--workers", "1"]
-        )
-        try:
-            response = client.post("/api/jobs", json={"text": "Background note"})
-            assert response.status_code == 202
-            deadline = time.monotonic() + 30
-            while time.monotonic() < deadline:
-                if any(note["text"] == "Background note" for note in client.get("/api/notes").json()):
-                    return
-                assert worker.poll() is None, "Taskiq worker exited before consuming the job"
-                time.sleep(0.2)
-            raise AssertionError("Taskiq worker did not persist the queued note")
-        finally:
-            worker.terminate()
-            worker.wait(timeout=15)
+def test_background_note(client):
+    worker = subprocess.Popen(
+        [sys.executable, "-m", "taskiq", "worker", "app.jobs:broker", "--workers", "1"]
+    )
+    try:
+        response = client.post("/api/jobs", json={"text": "Background note"})
+        assert response.status_code == 202
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            if any(note["text"] == "Background note" for note in client.get("/api/notes").json()):
+                return
+            assert worker.poll() is None, "Taskiq worker exited before consuming the job"
+            time.sleep(0.2)
+        raise AssertionError("Taskiq worker did not persist the queued note")
+    finally:
+        worker.terminate()
+        worker.wait(timeout=15)

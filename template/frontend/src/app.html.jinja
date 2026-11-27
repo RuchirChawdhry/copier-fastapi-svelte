@@ -12,10 +12,11 @@
         document.documentElement.classList.toggle('dark', !['light','solarized-light'].includes(theme));
       } catch {}
     </script>
+    %sveltekit.head%
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>
+
 

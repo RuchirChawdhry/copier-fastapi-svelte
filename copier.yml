@@ -26,3 +26,7 @@ enable_terminal:
   default: false
   help: Include authenticated ttyd browser terminal?
 
+enable_events:
+  type: bool
+  default: false
+  help: Include live Server-Sent Events notifications?

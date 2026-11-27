@@ -10,7 +10,10 @@
   import FileText from '@lucide/svelte/icons/file-text';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as Command from '$lib/components/ui/command/index.js';
-  import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
+  import { PaneGroup, Pane, PaneResizer } from 'paneforge';
+  import NoteForm from '$lib/NoteForm.svelte';
+  import NotesTable from '$lib/NotesTable.svelte';
+  import Diagnostics from '$lib/Diagnostics.svelte';
   import { api, type Health, type Note } from '$lib/api';
   import { themes, applyTheme, currentTheme, type Theme } from '$lib/theme';
   import { notify, requestNotifications } from '$lib/notifications';
@@ -20,11 +23,11 @@
 
   let theme = $state<Theme>(currentTheme());
   let palette = $state(false);
-  let page = $state<'workspace' | 'settings'>('workspace');
+  let page = $state<'workspace' | 'settings' | 'diagnostics'>('workspace');
   let notes = $state<Note[]>([]);
   let health = $state<Health | null>(null);
-  let draft = $state('');
-  let busy = $state(false);
+  let selectedId = $state<number | null>(null);
+  let selected = $derived(notes.find(note => note.id === selectedId));
   let dark = $derived(!['light', 'solarized-light'].includes(theme));
 
   function setTheme(value: Theme) {
@@ -52,20 +55,10 @@
     }
   }
 
-  async function add(event: SubmitEvent) {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text || busy) return;
-    busy = true;
-    try {
-      notes = [...notes, await api.add(text)];
-      draft = '';
-      notify('Note saved');
-    } catch (error) {
-      toast.error(String(error));
-    } finally {
-      busy = false;
-    }
+  async function add(text: string) {
+    const saved = await api.add(text);
+    notes = [...notes.filter(note => note.id !== saved.id), saved];
+    notify('Note saved');
   }
 
   async function remove(id: number) {
@@ -78,7 +71,21 @@
     }
   }
 
-  onMount(() => { void refresh(); });
+  onMount(() => {
+    void refresh();
+{% if enable_events %}
+    const stream = new EventSource('/api/events');
+    let initialized = false;
+    stream.addEventListener('notes', (event: MessageEvent<string>) => {
+      const incoming: Note[] = JSON.parse(event.data);
+      const changed = JSON.stringify(incoming) !== JSON.stringify(notes);
+      notes = incoming;
+      if (initialized && changed) notify('Notes updated', true);
+      initialized = true;
+    });
+    return () => stream.close();
+{% endif %}
+  });
 </script>
 
 <svelte:window onkeydown={keyboard} />
@@ -95,6 +102,7 @@
       <p class="hidden px-3 py-2 text-xs font-medium uppercase tracking-widest text-muted-foreground md:block">Workspace</p>
       <Button variant={page === 'workspace' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'workspace'}><LayoutDashboard class="size-4" /> Overview</Button>
       <Button variant={page === 'settings' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'settings'}><Settings class="size-4" /> Settings</Button>
+      <Button variant={page === 'diagnostics' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'diagnostics'}><Activity class="size-4" /> Diagnostics</Button>
       <div class="flex-1"></div>
       <a class="hidden px-3 py-2 text-xs text-muted-foreground md:block" href="/api/health" target="_blank" rel="noreferrer">API health ↗</a>
     </aside>
@@ -112,30 +120,30 @@
         <section class="rounded-lg border bg-card p-5">
           <h2 class="text-lg font-semibold">Notes</h2>
           <p class="mb-5 text-sm text-muted-foreground">A working example of API, persistence and context menus.</p>
-          <form class="mb-4 flex gap-2" onsubmit={add}>
-            <input aria-label="New note" placeholder="Write a note…" maxlength="2000" bind:value={draft} class="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm" />
-            <Button type="submit" disabled={busy || !draft.trim()}>Add note</Button>
-          </form>
-          {#each notes as note (note.id)}
-            <ContextMenu.Root>
-              <ContextMenu.Trigger>
-                <div class="flex items-center justify-between gap-3 border-t py-3">
-                  <span class="break-all text-sm">{note.text}</span>
-                  <Button size="sm" variant="ghost" onclick={() => remove(note.id)}>Delete</Button>
-                </div>
-              </ContextMenu.Trigger>
-              <ContextMenu.Content>
-                <ContextMenu.Item onSelect={() => navigator.clipboard.writeText(note.text).then(() => notify('Copied'), () => toast.error('Clipboard unavailable'))}>Copy note</ContextMenu.Item>
-                <ContextMenu.Item onSelect={() => remove(note.id)}>Delete note</ContextMenu.Item>
-              </ContextMenu.Content>
-            </ContextMenu.Root>
-          {:else}
-            <p class="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">No notes yet.</p>
-          {/each}
+          <NoteForm onSave={add} />
+          <PaneGroup direction="horizontal" autoSaveId="notes-layout">
+            <Pane defaultSize={70} minSize={40}>
+              <div class="pr-3"><NotesTable {notes} onRemove={remove} onSelect={(note) => selectedId = note.id} /></div>
+            </Pane>
+            <PaneResizer class="w-2 rounded bg-border hover:bg-ring focus-visible:bg-ring" />
+            <Pane defaultSize={30} minSize={20}>
+              <div class="pl-4">
+                <h3 class="mb-2 text-sm font-medium">Note details</h3>
+                {#if selected}
+                  <p class="mb-2 font-mono text-xs text-muted-foreground">ID {selected.id}</p>
+                  <p class="break-all text-sm">{selected.text}</p>
+                {:else}
+                  <p class="text-sm text-muted-foreground">Select a note to inspect it.</p>
+                {/if}
+              </div>
+            </Pane>
+          </PaneGroup>
         </section>
 {% if enable_terminal %}
         <Terminal />
 {% endif %}
+      {:else if page === 'diagnostics'}
+        <Diagnostics />
       {:else}
         <h1 class="text-3xl font-semibold tracking-tight">Settings</h1>
         <section class="rounded-lg border bg-card p-5">
@@ -167,6 +175,7 @@
     <Command.Group heading="Navigation">
       <Command.Item value="open overview" onSelect={() => action(() => page = 'workspace')}>Open overview</Command.Item>
       <Command.Item value="open settings" onSelect={() => action(() => page = 'settings')}>Open settings</Command.Item>
+      <Command.Item value="open diagnostics" onSelect={() => action(() => page = 'diagnostics')}>Open diagnostics</Command.Item>
       <Command.Item value="refresh data" onSelect={() => action(refresh)}>Refresh data</Command.Item>
       <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}>Test notification</Command.Item>
     </Command.Group>

@@ -1,0 +1,51 @@
+name: Screenshots
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: screenshots
+  cancel-in-progress: false
+jobs:
+  screenshots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+      - name: Generate example application
+        run: uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD -d 'project_name=Example Workspace' -d enable_events=true . generated
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: generated/frontend/.node-version
+          package-manager-cache: false
+      - name: Install dependencies
+        working-directory: generated
+        run: |
+          npm install -g corepack
+          corepack enable pnpm
+          uv sync
+          cd frontend
+          pnpm install --no-frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: Capture screenshots
+        working-directory: generated/frontend
+        env:
+          SCREENSHOTS_DIR: ${{ github.workspace }}/screenshots
+        run: pnpm exec playwright test --config playwright.screenshots.config.ts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: screenshots
+          path: screenshots/*.png
+      - name: Commit screenshots
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add screenshots
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Refresh application screenshots [skip ci]"
+          git push
+

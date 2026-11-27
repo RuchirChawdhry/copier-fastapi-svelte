@@ -12,3 +12,12 @@ def cleanup_database():
     yield
     _database_dir.cleanup()
 
+
+@pytest.fixture(scope="session")
+def client():
+    from fastapi.testclient import TestClient
+
+    from app.api import create_app
+
+    with TestClient(create_app()) as test_client:
+        yield test_client

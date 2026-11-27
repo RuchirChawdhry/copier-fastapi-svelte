@@ -1,0 +1,15 @@
+import { test, expect } from '@playwright/test';
+
+test('schema-generated note form saves to FastAPI', async ({ page, request }) => {
+  await page.goto('/');
+  const section = page.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Schema-generated note' }),
+  });
+  const text = 'Schema form integration ' + Date.now();
+  await section.getByRole('textbox').fill(text);
+  await section.getByRole('button', { name: /submit/i }).click();
+  await expect.poll(async () => {
+    const notes = await (await request.get('/api/notes')).json();
+    return notes.some((note: {text: string}) => note.text === text);
+  }).toBe(true);
+});

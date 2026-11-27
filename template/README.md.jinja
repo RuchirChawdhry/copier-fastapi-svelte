@@ -1,8 +1,9 @@
 # {{ project_name }}
 
-Install uv, Node 24, pnpm and Go Task.
+Install uv, Node 24, pnpm and Go Task. Doctor uses an available Python interpreter (Python 3.10+).
 
 ```sh
+task doctor
 task setup
 {% if enable_jobs %}
 task jobs:redis
@@ -32,6 +33,8 @@ Install ttyd (includes xterm.js) on the Linux host. Run as an unprivileged accou
 
 ## Development
 
+Run `task doctor` or `task doctor:json` before setup or troubleshooting. Checks are read-only; warnings include missing browser/lockfiles, uninitialized default database and occupied ports. Errors exit nonzero. The database check uses APP_DATABASE from the environment or the default path (it does not load .env). API type presence is checked; use `task api:check` for freshness.
+
 task check, task fix, task test, task test:e2e, task build. `task setup` installs Chromium; use `task browser:install` to reinstall or `task browser:install-deps` for Linux OS dependencies if required. Setup installs pre-commit hooks if this project is already a Git repository. Otherwise run task hooks:install after git init.
 
 
@@ -42,7 +45,7 @@ Standalone Svelte 5 + Vite builds a static SPA; FastAPI is the sole application 
 
 ## Live updates
 
-The optional /api/events SSE stream sends current notes on connection and when the database changes, including changes made by another process such as a Taskiq worker. EventSource reconnects automatically. The browser displays a toast and, if granted permission, a native notification. The starter polls SQLite once per second per connected client; it does not provide durable event history or push while the page is closed.
+The optional /api/events SSE stream sends only a note revision on connection and change. SQLite triggers advance the revision transactionally, including writes by Taskiq workers or other processes. One monitor per API process reads the revision once per second; subscribers never query SQLite or receive note contents. The frontend invalidates the TanStack Query notes cache on connection, reconnect and change. Events are coalesced and are not durable history.
 {% endif %}
 
 ## Screenshots
@@ -83,3 +86,15 @@ Run `task --list-all` to discover commands. Use `task install`, `task setup`, `t
 The workspace uses the official Vega shadcn-svelte sidebar with icon collapse (Ctrl/Command+B), mobile sheet navigation, a dropdown action menu, keyboard hints, theme select, accessible switches, item rows, separators, markers and tooltips. Sidebar state persists in a browser cookie. The standard screenshot workflow captures the dropdown and collapsed sidebar in addition to the existing screens.
 
 The Resources navigation menu exposes API documentation, OpenAPI, service health and optional RSS. Notes use shadcn pagination connected to TanStack Table, a bounded Scroll Area, and a Popover containing Range Calendar for inclusive UTC creation-date filtering. New notes receive UTC timestamps; existing notes migrate without inventing a date and remain visible when no date filter is active.
+
+{% if enable_ntfy %}
+## ntfy push notifications
+
+Configure APP_NTFY_URL (server root), APP_NTFY_TOPIC (private access-controlled topic), and optionally APP_NTFY_TOKEN in .env. Send a deliberate notification:
+
+```sh
+task ntfy:send -- "Build complete" --title "Development"
+```
+
+Use app.ntfy.notify(message, title) from synchronous services or a worker; from async code call it using asyncio.to_thread. No notes or diagnostics are sent automatically. HTTP failures propagate, and the request times out after 10 seconds. This is independent of browser notifications and can reach subscribed devices while the SPA is closed.
+{% endif %}

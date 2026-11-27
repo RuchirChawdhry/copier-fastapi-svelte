@@ -8,9 +8,9 @@ tasks:
       - npm install -g corepack
       - corepack enable pnpm
   test:
-    desc: Test all Copier feature combinations
+    desc: Render all feature combinations and lint generated Python before the CI matrix
     cmds:
-      - uv run --no-project --with copier==9.14.1 --with pytest pytest -q tests
+      - uv run --no-project --with copier==9.14.1 --with pytest --with ruff pytest -q tests
   render:
     desc: Render a project (pass Copier flags and destination after --)
     cmds:
@@ -20,7 +20,7 @@ tasks:
     cmds:
       - task: render
         vars:
-          CLI_ARGS: '--defaults -d enable_jobs="$JOBS" -d enable_terminal="$TERMINAL" -d enable_events="$EVENTS" -d enable_mcp="$MCP" -d enable_schema_forms="$SCHEMA_FORMS" -d enable_rss="$RSS" . generated'
+          CLI_ARGS: '--defaults -d enable_jobs="$JOBS" -d enable_terminal="$TERMINAL" -d enable_events="$EVENTS" -d enable_mcp="$MCP" -d enable_schema_forms="$SCHEMA_FORMS" -d enable_rss="$RSS" -d enable_ntfy="${NTFY:-false}" . generated'
   render:screenshots:
     desc: Render screenshot example
     cmds:

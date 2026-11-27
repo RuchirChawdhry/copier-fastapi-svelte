@@ -1,6 +1,6 @@
 # Agent instructions
 
-- Start with task setup. Use Task exclusively for project installation, building, testing, formatting, code generation, dependency changes and development operations. Run task --list to discover commands; add new tasks rather than inventing ad hoc command sequences.
+- Start with task doctor; run task setup when dependencies are missing. Use Task exclusively for project installation, building, testing, formatting, code generation, dependency changes and development operations. Run task --list to discover commands; add new tasks rather than inventing ad hoc command sequences.
 - Python lives in app; Svelte 5 lives in frontend/src. Use runes and the vendored shadcn-svelte components. Add components through task ui:add.
 - Use shared theme tokens, not component-specific colors. Keep Script → Markup → Style.
 - Prefer maintained libraries and straightforward implementation. No gratuitous abstraction.
@@ -27,3 +27,5 @@
 - Use the vendored shadcn-svelte Vega Sidebar, Dropdown Menu, Item, Kbd, Marker, Select, Separator, Switch and Tooltip components for consistent UI. Preserve accessible names, keyboard navigation, collapsed icon tooltips and mobile navigation.
 
 - Reuse Navigation Menu, Pagination, Popover, Range Calendar and Scroll Area. Keep paging connected to TanStack Table; use real UTC creation dates for note filtering, preserving unknown dates in migrated records.
+
+- Use typed operation-specific ApiError messages; do not expose server exception details to users. SSE sends revisions only; invalidate the notes query on reconnect and change. If ntfy is enabled, send only deliberate messages to the configured topic; never publish private records automatically.

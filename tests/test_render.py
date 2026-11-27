@@ -1,4 +1,6 @@
+import json
 import subprocess
+import tomllib
 from itertools import product
 from pathlib import Path
 
@@ -8,10 +10,10 @@ from copier import run_copy
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize("jobs,terminal,events,mcp,schema_forms,rss", list(product([False, True], repeat=6)))
-def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss):
+@pytest.mark.parametrize("jobs,terminal,events,mcp,schema_forms,rss,ntfy", list(product([False, True], repeat=7)))
+def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy):
     run_copy(str(ROOT), str(tmp_path), defaults=True, vcs_ref="HEAD", data={
-        "project_name": "Example App", "enable_jobs": jobs, "enable_terminal": terminal, "enable_events": events, "enable_mcp": mcp, "enable_schema_forms": schema_forms, "enable_rss": rss,
+        "project_name": "Example App", "enable_jobs": jobs, "enable_terminal": terminal, "enable_events": events, "enable_mcp": mcp, "enable_schema_forms": schema_forms, "enable_rss": rss, "enable_ntfy": ntfy,
     })
     assert (tmp_path / ".copier-answers.yml").is_file()
     assert (tmp_path / "app/jobs.py").exists() == jobs
@@ -52,4 +54,12 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss):
     assert "task: browser:install" in taskfile
     assert "test:e2e:ci:" in taskfile
 
-    subprocess.run(['task', '--list-all'], cwd=tmp_path, check=True, capture_output=True)
+    assert (tmp_path / "app/ntfy.py").exists() == ntfy
+    assert (tmp_path / "tests/test_ntfy.py").exists() == ntfy
+    assert ("ntfy:send:" in taskfile) == ntfy
+    assert "doctor:json:" in taskfile
+    assert (tmp_path / "scripts/doctor.py").is_file()
+    assert ("httpx" in tomllib.loads(dependencies)["project"]["dependencies"]) == ntfy
+    json.loads(frontend)
+    subprocess.run(["task", "--list-all"], cwd=tmp_path, check=True)
+    subprocess.run(["ruff", "check", "app", "tests", "scripts"], cwd=tmp_path, check=True)

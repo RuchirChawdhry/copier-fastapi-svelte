@@ -33,6 +33,7 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm exec playwright install --with-deps chromium
       - name: Capture screenshots
+        timeout-minutes: 5
         working-directory: generated/frontend
         env:
           SCREENSHOTS_DIR: ${{ github.workspace }}/screenshots

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createTable, FlexRender, rowSortingFeature, createSortedRowModel, sortFns, tableFeatures, type ColumnDef } from '@tanstack/svelte-table';
+  import { createTable, FlexRender, rowSortingFeature, createSortedRowModel, sortFns, tableFeatures, columnFilteringFeature, globalFilteringFeature, createFilteredRowModel, filterFn_includesString, rowPaginationFeature, createPaginatedRowModel, type ColumnDef } from '@tanstack/svelte-table';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import { notify } from '$lib/notifications';
@@ -7,22 +7,25 @@
   import type { Note } from '$lib/api';
 
   let { notes, onRemove, onSelect }: { notes: Note[]; onRemove: (id: number) => void; onSelect: (note: Note) => void } = $props();
-  let search = $state('');
-  let page = $state(0);
-  const pageSize = 8;
-  let filtered = $derived(notes.filter(note => note.text.toLowerCase().includes(search.toLowerCase())));
-  const columns: ColumnDef<Note>[] = [
+  const features = tableFeatures({
+    columnFilteringFeature, globalFilteringFeature,
+    filteredRowModel: createFilteredRowModel(),
+    filterFns: { includesString: filterFn_includesString },
+    rowSortingFeature, sortedRowModel: createSortedRowModel(), sortFns,
+    rowPaginationFeature, paginatedRowModel: createPaginatedRowModel(),
+  });
+  const columns: ColumnDef<typeof features, Note>[] = [
     { accessorKey: 'id', header: 'ID' },
     { accessorKey: 'text', header: 'Note' },
   ];
-  const features = tableFeatures({ rowSortingFeature, sortedRowModel: createSortedRowModel(), sortFns });
-  const table = createTable({ features, columns, get data() { return filtered; } });
-  let rows = $derived(table.getRowModel().rows);
-  let lastPage = $derived(Math.max(0, Math.ceil(rows.length / pageSize) - 1));
-  let activePage = $derived(Math.min(page, lastPage));
+  const table = createTable({
+    features, columns, get data() { return notes; },
+    globalFilterFn: 'includesString',
+    initialState: { pagination: { pageIndex: 0, pageSize: 8 } },
+  });
 </script>
 
-<input aria-label="Filter notes" placeholder="Filter notes…" bind:value={search} oninput={() => page = 0} class="mb-3 w-full rounded-md border bg-background px-3 py-2 text-sm" />
+<input aria-label="Filter notes" placeholder="Filter notes…" value={table.getState().globalFilter ?? ''} oninput={(event) => table.setGlobalFilter(event.currentTarget.value)} class="mb-3 w-full rounded-md border bg-background px-3 py-2 text-sm" />
 <div class="overflow-x-auto rounded-md border">
   <table class="w-full text-left text-sm">
     <thead class="bg-muted text-muted-foreground">
@@ -38,7 +41,7 @@
       {/each}
     </thead>
     <tbody>
-      {#each rows.slice(activePage * pageSize, (activePage + 1) * pageSize) as row (row.original.id)}
+      {#each table.getRowModel().rows as row (row.original.id)}
         <tr class="border-t hover:bg-muted/40">
           <td class="px-3 py-2 font-mono text-xs text-muted-foreground">{row.original.id}</td>
           <td class="px-3 py-2">
@@ -62,10 +65,10 @@
   </table>
 </div>
 <div class="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-  <span>{rows.length} notes · Page {activePage + 1} of {lastPage + 1}</span>
+  <span>{table.getPrePaginationRowModel().rows.length} notes · Page {table.getState().pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}</span>
   <div class="flex gap-1">
-    <Button size="sm" variant="outline" disabled={activePage === 0} onclick={() => page = activePage - 1}>Previous</Button>
-    <Button size="sm" variant="outline" disabled={activePage >= lastPage} onclick={() => page = activePage + 1}>Next</Button>
+    <Button size="sm" variant="outline" disabled={!table.getCanPreviousPage()} onclick={() => table.previousPage()}>Previous</Button>
+    <Button size="sm" variant="outline" disabled={!table.getCanNextPage()} onclick={() => table.nextPage()}>Next</Button>
   </div>
 </div>
 

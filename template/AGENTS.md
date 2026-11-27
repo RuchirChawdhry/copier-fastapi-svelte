@@ -36,6 +36,6 @@
 
 - Use exact Playwright role/name, text and placeholder selectors; scope repeated elements to their owning component instead of using first()/nth() to conceal ambiguity. Regex selectors are reserved for genuinely dynamic text. Keep screenshots independently runnable with one named test per image and browser-level showcase fixtures. Use task screenshots -- --grep <scenario> for targeted captures.
 
-- Development MCP is always included in tools/dev_mcp (local stdio, dev dependency). The optional app/mcp.py exposes application features over HTTP; never mount development tools in FastAPI. Use project_context, doctor, inspect_endpoint and focused verification tools where available. See docs/development-mcp.md. Use development data only; browser diagnostics and test reports may contain application text.
+- Development MCP is always included in tools/dev_mcp (local stdio, dev dependency). The optional app/mcp.py exposes application features over HTTP; never mount development tools in FastAPI. Use project_context, doctor, inspect_endpoint and focused verification tools. Use the agent’s native browser tools for interactive UI inspection; retain Playwright for tests and repository showcases. See docs/development-mcp.md.
 
 - Target the current supported dependency versions and protocols in new template code. Do not add historical compatibility shims, migration paths or redundant legacy test cases without an explicit requirement.

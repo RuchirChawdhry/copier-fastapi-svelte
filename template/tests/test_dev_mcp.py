@@ -9,7 +9,7 @@ import pytest
 from fastmcp import Client
 from fastmcp.client.transports import StdioTransport
 
-from tools.dev_mcp import browser, database, verification
+from tools.dev_mcp import database, verification
 from tools.dev_mcp.project import inspect_endpoint, project_context
 from tools.dev_mcp.server import create_server
 
@@ -20,12 +20,13 @@ def test_fastmcp_version():
 
 def test_mcp_registration_and_calls():
     async def check():
-        async with Client(create_server(), mode="2026-07-28") as client:
+        async with Client(create_server(), mode="auto") as client:
             tools = {tool.name for tool in await client.list_tools()}
             assert {"project_context", "doctor", "list_pages", "list_endpoints",
-                    "inspect_endpoint", "database_schema", "browser_diagnostics",
-                    "capture_screenshot", "accessibility_audit", "run_checks",
+                    "inspect_endpoint", "database_schema", "run_checks",
                     "run_tests", "test_results"} <= tools
+            assert len(tools) == 15
+            assert client.protocol_version == "2026-07-28"
             result = await client.call_tool("project_context")
             assert not result.is_error
             assert result.structured_content["name"] == project_context()["name"]
@@ -42,7 +43,7 @@ def test_stdio_protocol():
             command=sys.executable, args=["-m", "tools.dev_mcp"],
             cwd=str(Path(__file__).resolve().parents[1]), keep_alive=False,
         )
-        async with Client(transport, mode="2026-07-28", timeout=20) as client:
+        async with Client(transport, mode="auto", timeout=20) as client:
             assert client.server_info.name.endswith("-dev")
             assert client.protocol_version == "2026-07-28"
             tools = await client.list_tools()
@@ -52,27 +53,6 @@ def test_stdio_protocol():
             assert result.structured_content["name"] == project_context()["name"]
 
     asyncio.run(asyncio.wait_for(check(), timeout=45))
-
-
-def test_screenshot_image_content(monkeypatch):
-    import base64
-
-    # Test the MCP image serialization separately from the live Chromium integration test.
-    png = base64.b64decode(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jR1sAAAAASUVORK5CYII="
-    )
-    monkeypatch.setattr(browser, "probe", lambda *args: {"image": base64.b64encode(png).decode()})
-
-    async def check():
-        async with Client(create_server(), mode="2026-07-28") as client:
-            result = await client.call_tool("capture_screenshot")
-            assert not result.is_error
-            image = result.content[0]
-            assert image.type == "image"
-            assert image.mime_type == "image/png"
-            assert base64.b64decode(image.data) == png
-
-    asyncio.run(check())
 
 
 def test_contract_inspection():

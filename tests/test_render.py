@@ -58,7 +58,9 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert "/tools" in manifest["tool"]["hatch"]["build"]["targets"]["sdist"]["exclude"]
     assert (tmp_path / "tools/dev_mcp/server.py").is_file()
     assert (tmp_path / "tests/test_dev_mcp.py").is_file()
-    assert (tmp_path / "frontend/scripts/dev-browser.mjs").is_file()
+    assert (tmp_path / "frontend/scripts/dev-inspect.mjs").is_file()
+    assert not (tmp_path / "tools/dev_mcp/browser.py").exists()
+    assert not (tmp_path / "frontend/scripts/dev-browser.mjs").exists()
     assert (tmp_path / "app/mcp.py").exists() == mcp
     assert (tmp_path / "tests/test_mcp.py").exists() == mcp
     assert ("/mcp" in (tmp_path / "Caddyfile").read_text()) == mcp

@@ -39,8 +39,3 @@ def database_schema() -> dict:
             "indexes": [dict(row) for row in connection.execute("SELECT * FROM pragma_index_list(?)", (name,))],
         } for name in tables]}
 
-
-def database_indexes() -> list[dict]:
-    """List table indexes using the same read-only schema inspection."""
-    return [{"table": table["name"], "indexes": table["indexes"]}
-            for table in database_schema()["tables"]]

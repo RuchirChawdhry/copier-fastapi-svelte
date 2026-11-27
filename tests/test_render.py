@@ -1,3 +1,4 @@
+import subprocess
 from itertools import product
 from pathlib import Path
 
@@ -50,3 +51,5 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss):
     assert "{{.CLI_ARGS}}" in taskfile
     assert "task: browser:install" in taskfile
     assert "test:e2e:ci:" in taskfile
+
+    subprocess.run(['task', '--list-all'], cwd=tmp_path, check=True, capture_output=True)

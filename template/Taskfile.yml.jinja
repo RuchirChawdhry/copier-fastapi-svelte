@@ -102,7 +102,7 @@ tasks:
   test:
     desc: Run backend tests (optional pytest arguments after --)
     cmds:
-      - uv run pytest -q {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv run pytest -q {% raw %}{{.CLI_ARGS}}{% endraw +%}
   test:all:
     desc: Run backend and browser tests
     cmds:
@@ -115,7 +115,7 @@ tasks:
   benchmark:
     desc: Run backend performance benchmarks
     cmds:
-      - uv run pytest -q --benchmark-only {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv run pytest -q --benchmark-only {% raw %}{{.CLI_ARGS}}{% endraw +%}
   browser:install:
     desc: Install Chromium for Playwright
     dir: frontend
@@ -129,7 +129,7 @@ tasks:
   test:e2e:
     dir: frontend
     cmds:
-      - pnpm exec playwright test {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - pnpm exec playwright test {% raw %}{{.CLI_ARGS}}{% endraw +%}
   test:e2e:ci:
     desc: Run browser tests against prebuilt assets and produce JUnit report
     dir: frontend
@@ -173,41 +173,41 @@ tasks:
     desc: Add shadcn-svelte components (names after --)
     dir: frontend
     cmds:
-      - pnpm exec shadcn-svelte add {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - pnpm exec shadcn-svelte add {% raw %}{{.CLI_ARGS}}{% endraw +%}
   api:add:
     desc: Add Python dependencies (arguments after --)
     cmds:
-      - uv add {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv add {% raw %}{{.CLI_ARGS}}{% endraw +%}
   api:remove:
     desc: Remove Python dependencies (arguments after --)
     cmds:
-      - uv remove {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv remove {% raw %}{{.CLI_ARGS}}{% endraw +%}
   ui:dependency:add:
     desc: Add frontend dependencies (arguments after --)
     dir: frontend
     cmds:
-      - pnpm add {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - pnpm add {% raw %}{{.CLI_ARGS}}{% endraw +%}
   ui:dependency:remove:
     desc: Remove frontend dependencies (arguments after --)
     dir: frontend
     cmds:
-      - pnpm remove {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - pnpm remove {% raw %}{{.CLI_ARGS}}{% endraw +%}
   hooks:check:
     desc: Run pre-commit against all tracked files
     cmds:
       - uv run pre-commit run --all-files
   hooks:ruff:
     cmds:
-      - uv run ruff check --fix {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv run ruff check --fix {% raw %}{{.CLI_ARGS}}{% endraw +%}
   hooks:ruff-format:
     cmds:
-      - uv run ruff format {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv run ruff format {% raw %}{{.CLI_ARGS}}{% endraw +%}
   hooks:eslint:
     cmds:
-      - uv run python scripts/frontend_hook.py eslint {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv run python scripts/frontend_hook.py eslint {% raw %}{{.CLI_ARGS}}{% endraw +%}
   hooks:prettier:
     cmds:
-      - uv run python scripts/frontend_hook.py prettier {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv run python scripts/frontend_hook.py prettier {% raw %}{{.CLI_ARGS}}{% endraw +%}
   ui:format:
     dir: frontend
     cmds:
@@ -216,7 +216,7 @@ tasks:
   rss:publish:
     desc: Publish an RSS announcement (title, description and optional --link after --)
     cmds:
-      - uv run python -m app.cli publish-feed {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - uv run python -m app.cli publish-feed {% raw %}{{.CLI_ARGS}}{% endraw +%}
 {% endif %}
 {% if enable_jobs %}
   jobs:redis:

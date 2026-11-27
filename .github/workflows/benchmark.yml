@@ -24,8 +24,6 @@ jobs:
           package-manager-cache: false
       - name: Measure three revisions sequentially on one runner
         run: task benchmark
-      - name: Report measured results
-        run: task benchmark:report
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:

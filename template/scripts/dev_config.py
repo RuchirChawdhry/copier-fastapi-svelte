@@ -24,6 +24,9 @@ def configuration():
         services["frontend"] = {"url": f"http://127.0.0.1:{frontend.group(1)}/", "expected": True}
     if gateway:
         services["proxy"] = {"url": f"http://127.0.0.1:{gateway.group(1)}/", "expected": False}
+    terminal = re.search(r"reverse_proxy 127\.0\.0\.1:(\d+)", caddy.split("handle /terminal/*", 1)[1]) if "handle /terminal/*" in caddy else None
+    if terminal:
+        services["terminal"] = {"host": "127.0.0.1", "port": int(terminal.group(1)), "expected": False}
     interpreter = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     settings = {}
     if interpreter.is_file():
@@ -41,7 +44,7 @@ def configuration():
     redis = settings.get("redis_url")
     if redis:
         parsed = urlsplit(redis)
-        services["redis"] = {"host": parsed.hostname, "port": parsed.port or 6379, "expected": False}
+        services["redis"] = {"host": parsed.hostname, "port": parsed.port or 6379, "expected": True}
     for service in services.values():
         if "url" in service:
             parsed = urlsplit(service["url"])

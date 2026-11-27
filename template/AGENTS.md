@@ -39,3 +39,5 @@
 - Development MCP is always included in tools/dev_mcp (local stdio, dev dependency). The optional app/mcp.py exposes application features over HTTP; never mount development tools in FastAPI. Use project_context, doctor, inspect_endpoint and focused verification tools. Use the agent’s native browser tools for interactive UI inspection; retain Playwright for tests and repository showcases. See docs/development-mcp.md.
 
 - Target the current supported dependency versions and protocols in new template code. Do not add historical compatibility shims, migration paths or redundant legacy test cases without an explicit requirement.
+
+- Development MCP tools are project-aware; do not reintroduce generic browser inspection or duplicate agent-native tools. Keep page registry component paths up to date. Use focused verification and do not change lockfiles as a side effect of unrelated fixes.

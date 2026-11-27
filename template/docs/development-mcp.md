@@ -32,3 +32,5 @@ Project context discovers manifest versions, actual Task inventory and existing 
 - `test_results()` reports latest JUnit artifacts, failure details, durations and source-mtime freshness (not a commit-level guarantee).
 
 Service configuration discovers the template's literal Vite/Caddy settings and Pydantic database/Redis settings when installed; computed custom Vite/Caddy configuration and OS-restricted process ownership may require manual inspection. Dependency status compares direct manifest/lock/install data and delegates full lock validation to uv and pnpm. Static reference matches are candidates, not a complete call graph. No new Copier options.
+
+The server exposes exactly 15 project-specific tools. Reported process ownership depends on OS permissions. Component import references are static candidates; namespace imports identify a component family, not proof that every primitive is rendered. Report freshness is based on source modification times.

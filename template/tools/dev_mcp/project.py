@@ -25,7 +25,7 @@ def project_context() -> dict:
     manifest = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     frontend = json.loads((FRONTEND / "package.json").read_text(encoding="utf-8"))
     answers_file = ROOT / ".copier-answers.yml"
-    answers = yaml.safe_load(answers_file.read_text(encoding="utf-8")) or {} if answers_file.is_file() else {}
+    answers = (yaml.safe_load(answers_file.read_text(encoding="utf-8")) or {}) if answers_file.is_file() else {}
     try:
         result = subprocess.run(["task", "--list-all", "--json"], cwd=ROOT, capture_output=True,
                                 text=True, timeout=10, check=True)
@@ -86,7 +86,7 @@ def list_endpoints() -> list[dict]:
 
 def references(path: str, directory: Path, extensions: set[str]) -> list[dict]:
     # Literal references are candidates, not proof of a call graph.
-    prefix = path.split("{", 1)[0].rstrip("/")
+    prefix = path.split("{", 1)[0].rstrip("/") or path
     found = []
     for file in sorted(directory.rglob("*")):
         if file.suffix not in extensions or not file.is_file() or "generated" in file.parts or "ui" in file.parts:

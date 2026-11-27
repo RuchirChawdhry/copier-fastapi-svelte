@@ -1,9 +1,11 @@
 import importlib.metadata
 import json
 import shutil
+import socket
 import subprocess
 import time
 import tomllib
+from pathlib import Path
 
 import httpx
 import psutil
@@ -29,6 +31,8 @@ def dependency_status() -> dict:
     manifest = tomllib.loads((ROOT / "pyproject.toml").read_text())
     lockfile = ROOT / "uv.lock"
     packages = tomllib.loads(lockfile.read_text()).get("package", []) if lockfile.is_file() else []
+    root_package = next((pkg for pkg in packages if canonicalize_name(pkg["name"]) == canonicalize_name(manifest["project"]["name"])), {})
+    metadata = root_package.get("metadata", {})
     locked = {}
     for package in packages:
         locked.setdefault(canonicalize_name(package["name"]), set()).add(package["version"])
@@ -45,8 +49,10 @@ def dependency_status() -> dict:
             except importlib.metadata.PackageNotFoundError:
                 installed = None
             versions = sorted(locked.get(canonicalize_name(req.name), ()))
+            declarations = metadata.get("requires-dist", []) if group == "runtime" else metadata.get("requires-dev", {}).get("dev", [])
+            locked_declarations = [item for item in declarations if canonicalize_name(item["name"]) == canonicalize_name(req.name)]
             python.append({"group": group, "name": req.name, "declared": str(req.specifier),
-                           "installed": installed, "locked": versions, "applicable": applicable,
+                           "installed": installed, "locked": versions, "locked_declarations": locked_declarations, "applicable": applicable,
                            "issues": (["missing_install"] if applicable and not installed else []) +
                            (["installed_outside_requirement"] if applicable and installed and installed not in req.specifier else []) +
                            (["missing_lock"] if applicable and not versions else []) +
@@ -99,7 +105,7 @@ def service_status() -> dict:
                             process = psutil.Process(listener.pid)
                             item.update(name=process.name(), rss_bytes=process.memory_info().rss,
                                         uptime_seconds=round(time.time() - process.create_time(), 1),
-                                        workspace_owned=process.cwd() == str(ROOT) or process.cwd().startswith(str(ROOT) + "/"))
+                                        workspace_owned=Path(process.cwd()).resolve().is_relative_to(ROOT.resolve()))
                         except (psutil.Error, OSError):
                             pass
                     row["listeners"].append(item)
@@ -113,7 +119,11 @@ def service_status() -> dict:
                 except (httpx.RequestError, ValueError):
                     row.update(reachable=False, healthy=False)
             else:
-                row["reachable"] = bool(row["listeners"]) if ownership_available else None
+                try:
+                    with socket.create_connection((service["host"], service["port"]), timeout=1):
+                        row["reachable"] = True
+                except OSError:
+                    row["reachable"] = False
                 row["healthy"] = None
             row["state"] = "running" if row["reachable"] else "not_running" if row["expected"] else "optional_not_running"
             services[name] = row
@@ -133,6 +143,7 @@ def git_status() -> dict:
         return {"ok": False, "detail": result.stderr.strip()}
     entries = iter(result.stdout.split("\0"))
     branch = next(entries).removeprefix("## ")
+    branch_name = branch.split("...")[0].removeprefix("No commits yet on ").removeprefix("Initial commit on ")
     files = []
     for entry in entries:
         if not entry:
@@ -140,10 +151,10 @@ def git_status() -> dict:
         staged, unstaged = entry[:2]
         file = {"path": entry[3:], "staged": staged.strip() or None,
                 "unstaged": unstaged.strip() or None, "untracked": entry.startswith("??")}
-        if staged in "RC" or unstaged in "RC":
+        if staged in {"R", "C"} or unstaged in {"R", "C"}:
             file["original_path"] = next(entries)
         files.append(file)
-    return {"ok": True, "branch": branch.split("...")[0], "tracking": branch,
+    return {"ok": True, "branch": branch_name, "tracking": branch,
             "files": files[:500], "total": len(files),
             "staged": sum(bool(f["staged"]) and not f["untracked"] for f in files),
             "unstaged": sum(bool(f["unstaged"]) and not f["untracked"] for f in files),

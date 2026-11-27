@@ -52,7 +52,7 @@ function components(search, category, limit) {
         const spec = node.moduleSpecifier.text;
         const target = spec.startsWith('$lib/') ? resolve(src, 'lib', spec.slice(5)) : spec.startsWith('.') ? resolve(dirname(path), spec) : null;
         if (target) {
-          const key = target.replace(/\/index\.(js|ts)$/, '');
+          const key = basename(target) === 'index.js' || basename(target) === 'index.ts' ? dirname(target) : target;
           const list = imports.get(key) ?? [];
           list.push(rel(path));
           imports.set(key, list);
@@ -104,7 +104,9 @@ function signatures(text) {
 async function contract() {
   const schema = JSON.parse(readFileSync(0, 'utf8'));
   const path = resolve(src, 'lib/generated/api.d.ts');
-  const generated = astToString(await openapiTS(schema));
+  // Match the CLI export order (the backend exports sorted keys).
+  const sortKeys = value => Array.isArray(value) ? value.map(sortKeys) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, sortKeys(value[key])])) : value;
+  const generated = astToString(await openapiTS(sortKeys(schema)));
   const previous = existsSync(path) ? readFileSync(path, 'utf8') : '';
   const before = signatures(previous);
   const after = signatures(generated);

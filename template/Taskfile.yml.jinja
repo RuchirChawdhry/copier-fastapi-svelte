@@ -120,6 +120,7 @@ tasks:
   build:
     desc: Build frontend and Python distribution
     cmds:
+      - task: deps:check
       - task: api:generate
       - task: ui:build
       - task: api:build

@@ -58,6 +58,7 @@ jobs:
         run: |
           task render -- --defaults . generated
           cd generated
+          sha256sum uv.lock frontend/pnpm-lock.yaml > "$RUNNER_TEMP/minimal-locks.sha256"
           task install
           task ui:format
           task check
@@ -65,11 +66,12 @@ jobs:
           task build
           task browser:install
           task test:e2e:ci
-          git diff --exit-code -- uv.lock frontend/pnpm-lock.yaml
+          sha256sum --check "$RUNNER_TEMP/minimal-locks.sha256"
       - name: Validate fully enabled locked application
         run: |
           task render -- --defaults -d enable_jobs=true -d enable_events=true -d enable_mcp=true -d enable_rss=true -d enable_ntfy=true -d enable_schema_forms=true -d enable_terminal=true . generated-full
           cd generated-full
+          sha256sum uv.lock frontend/pnpm-lock.yaml > "$RUNNER_TEMP/full-locks.sha256"
           task install
           task ui:format
           task jobs:redis
@@ -78,7 +80,8 @@ jobs:
           task build
           task browser:install
           task test:e2e:ci
-      - name: Publish immutable version tag and GitHub release
+          sha256sum --check "$RUNNER_TEMP/full-locks.sha256"
+      - name: Publish version tag and GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

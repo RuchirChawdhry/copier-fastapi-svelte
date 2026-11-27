@@ -28,7 +28,7 @@ export function createWorkspace() {
     },
   }));
   let selectedId = $state<number | null>(null);
-  let selected = $derived(notes.find(note => note.id === selectedId));
+  const selected = $derived(notes.find(note => note.id === selectedId));
 
   async function refresh() {
     await Promise.all([notesQuery.refetch(), healthQuery.refetch()]);

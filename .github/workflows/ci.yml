@@ -43,17 +43,21 @@ jobs:
             mcp: false
             schema_forms: true
             rss: false
+            ntfy: false
           - jobs: true
             terminal: true
             events: true
             mcp: true
             schema_forms: true
+            rss: false
+            ntfy: false
           - jobs: false
             terminal: false
             events: false
             mcp: false
             schema_forms: false
             rss: true
+            ntfy: false
           - jobs: true
             terminal: true
             events: true

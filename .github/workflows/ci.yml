@@ -37,7 +37,6 @@ jobs:
           corepack enable pnpm
           uv sync
           pnpm --dir frontend install
-          pnpm --dir frontend exec shadcn-svelte add button command context-menu --yes
       - name: Start Redis
         if: matrix.jobs
         working-directory: generated
@@ -46,6 +45,7 @@ jobs:
         working-directory: generated
         run: |
           uv run ruff check app tests
+          uv run ty check app
           uv run pytest -q --benchmark-disable --junitxml=backend.xml
           uv build
       - name: Frontend typecheck and build

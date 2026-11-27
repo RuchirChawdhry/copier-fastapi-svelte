@@ -2,12 +2,18 @@ import asyncio
 import sqlite3
 from contextlib import AsyncExitStack, asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Response{% if enable_jobs %}, Request{% endif %}
+{% if enable_jobs %}
+from fastapi import FastAPI, HTTPException, Request, Response
+{% else %}
+from fastapi import FastAPI, HTTPException, Response
+{% endif %}
 
 from pydantic import BaseModel, Field
 {% if enable_jobs %}
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
+from taskiq.exceptions import SendTaskError
+
 from .jobs import broker, save_note
 {% endif %}
 
@@ -99,7 +105,11 @@ def delete_note(note_id: int) -> Response:
 
 @app.post("/api/jobs", status_code=202)
 async def enqueue(payload: NoteInput) -> dict[str, str]:
-    task = await save_note.kiq(payload.text)
+    try:
+        async with asyncio.timeout(10):
+            task = await save_note.kiq(payload.text)
+    except (RedisError, SendTaskError, TimeoutError) as exc:
+        raise HTTPException(503, "Job queue unavailable") from exc
     return {"task_id": task.task_id}
 {% endif %}
 

@@ -7,16 +7,6 @@ tasks:
     cmds:
       - uv sync
       - pnpm --dir frontend install
-      - task: ui:components
-  ui:components:
-    desc: Initialize official shadcn-svelte components if absent
-    status:
-      - test -f src/lib/components/ui/command/index.ts
-      - test -f src/lib/components/ui/context-menu/index.ts
-      - test -f src/lib/components/ui/button/index.ts
-    dir: frontend
-    cmds:
-      - pnpm exec shadcn-svelte add button command context-menu --yes
   setup:
     desc: Install dependencies and initialize database
     cmds:

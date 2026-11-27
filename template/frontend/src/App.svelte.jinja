@@ -5,6 +5,10 @@
   import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
   import { notesOptions, healthOptions } from '$lib/queries';
   import { Toaster, toast } from 'svelte-sonner';
+{% if enable_rss %}
+  import Rss from '@lucide/svelte/icons/rss';
+  import Copy from '@lucide/svelte/icons/copy';
+{% endif %}
   import Bell from '@lucide/svelte/icons/bell';
   import Sun from '@lucide/svelte/icons/sun';
   import Moon from '@lucide/svelte/icons/moon';
@@ -77,6 +81,17 @@
     run();
   }
 
+{% if enable_rss %}
+  async function copyFeed() {
+    try {
+      await navigator.clipboard.writeText(new URL('/feed.rss', location.origin).href);
+      notify('Feed URL copied');
+    } catch (error) {
+      toast.error(String(error));
+    }
+  }
+
+{% endif %}
   function keyboard(event: KeyboardEvent) {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
@@ -132,6 +147,9 @@
       <Button variant={page === 'settings' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'settings'}><Settings class="size-4" /> Settings</Button>
       <Button variant={page === 'diagnostics' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'diagnostics'}><Activity class="size-4" /> Diagnostics</Button>
       <div class="flex-1"></div>
+{% if enable_rss %}
+      <a class="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground" href="/feed.rss" target="_blank" rel="noopener noreferrer"><Rss aria-hidden="true" class="size-4 shrink-0" /> RSS feed</a>
+{% endif %}
       <a class="hidden px-3 py-2 text-xs text-muted-foreground md:block" href="/api/health" target="_blank" rel="external noreferrer">API health ↗</a>
     </aside>
     <main class="space-y-6 p-5 md:p-9">
@@ -236,6 +254,12 @@
       <Command.Item value="refresh data" onSelect={() => action(refresh)}><RefreshCw aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Refresh data</Command.Item>
       <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}><Bell aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Test notification</Command.Item>
     </Command.Group>
+{% if enable_rss %}
+    <Command.Group heading="Syndication">
+      <Command.Item value="open rss feed" onSelect={() => action(() => { window.open('/feed.rss', '_blank', 'noopener,noreferrer'); })}><Rss aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open RSS feed</Command.Item>
+      <Command.Item value="copy rss feed url" onSelect={() => action(copyFeed)}><Copy aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Copy RSS feed URL</Command.Item>
+    </Command.Group>
+{% endif %}
     <Command.Group heading="Appearance">
       {#each themes as option (option.id)}
         {@const Icon = themeIcons[option.id]}

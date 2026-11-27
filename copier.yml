@@ -40,3 +40,8 @@ enable_schema_forms:
   type: bool
   default: false
   help: Include JSON Schema-generated forms (SJSF)?
+
+enable_rss:
+  type: bool
+  default: false
+  help: Include an RSS 2.0 announcement feed (feed.rss)?

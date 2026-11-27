@@ -150,6 +150,11 @@ def create_app() -> FastAPI:
         return EventSourceResponse(note_events(database), ping=15)
 {% endif %}
 
+{% if enable_rss %}
+    from .rss import router as rss_router
+
+    app.include_router(rss_router)
+{% endif %}
     return app
 
 

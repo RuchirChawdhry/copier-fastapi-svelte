@@ -35,6 +35,16 @@ def openapi(output: Path = Path("frontend/openapi.json")) -> None:
     output.write_text(json.dumps(app.openapi(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+{% if enable_rss %}
+@cli.command
+def publish_feed(title: str, description: str, *, link: str | None = None) -> None:
+    """Publish a deliberate public announcement to the RSS feed."""
+    from .rss import publish
+
+    print(publish(title, description, link))
+
+
+{% endif %}
 if __name__ == "__main__":
     cli()
 

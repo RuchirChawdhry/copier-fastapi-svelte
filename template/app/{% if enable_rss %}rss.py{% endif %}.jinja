@@ -1,0 +1,75 @@
+from datetime import UTC, datetime
+from hashlib import sha256
+from html import escape
+from uuid import uuid4
+
+from fastapi import APIRouter, Request, Response
+from feedgenerator import Rss201rev2Feed
+from pydantic import HttpUrl
+
+from .config import get_settings
+from .db import Database
+
+router = APIRouter()
+MEDIA_TYPE = "application/rss+xml"
+
+
+class RSSResponse(Response):
+    media_type = MEDIA_TYPE
+
+
+def publish(title: str, description: str, link: str | None = None) -> str:
+    """Persist an explicitly published announcement, never private notes."""
+    settings = get_settings()
+    database = Database(settings.database)
+    database.initialize()
+    guid = uuid4().urn
+    url = str(HttpUrl(link)) if link else str(settings.public_url)
+    # Validate the text before storing it: XML 1.0 excludes some control characters.
+    for text in (title, description):
+        if any(ord(char) < 32 and char not in "\t\n\r" for char in text):
+            raise ValueError("RSS text contains unsupported XML control characters")
+    if not title.strip():
+        raise ValueError("RSS title must not be empty")
+    with database.connect() as connection:
+        connection.execute(
+            "INSERT INTO feed_items (guid, title, description, link, published) VALUES (?, ?, ?, ?, ?)",
+            (guid, title, description, url, datetime.now(UTC).isoformat()),
+        )
+    return guid
+
+
+def render_feed() -> str:
+    settings = get_settings()
+    base = str(settings.public_url).rstrip("/")
+    feed = Rss201rev2Feed(
+        title={{ project_name | tojson }} + " — Updates",
+        link=base + "/",
+        description="Published application announcements",
+        feed_url=base + "/feed.rss",
+        language="en",
+    )
+    with Database(settings.database).connect() as connection:
+        rows = connection.execute(
+            "SELECT guid, title, description, link, published FROM feed_items ORDER BY id DESC LIMIT 50"
+        ).fetchall()
+    for row in rows:
+        feed.add_item(
+            title=row["title"],
+            link=row["link"],
+            description=escape(row["description"]),
+            unique_id=row["guid"],
+            unique_id_is_permalink=False,
+            pubdate=datetime.fromisoformat(row["published"]),
+        )
+    return feed.writeString("utf-8")
+
+
+@router.get("/feed.rss", response_class=RSSResponse)
+def rss(request: Request) -> Response:
+    content = render_feed()
+    etag = '"' + sha256(content.encode("utf-8")).hexdigest() + '"'
+    headers = {"ETag": etag, "Cache-Control": "private, max-age=60"}
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+    return RSSResponse(content, headers=headers)

@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+{% if enable_rss %}
+    <link rel="alternate" type="application/rss+xml" title="Application updates" href="/feed.rss" />
+{% endif %}
     <title>{{ project_name | e }}</title>
     <script>
       try {

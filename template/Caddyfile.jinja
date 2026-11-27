@@ -6,6 +6,11 @@ http://:8080 {
 {% else %}
     @backend path /api/* /docs /openapi.json /redoc
 {% endif %}
+{% if enable_rss %}
+    handle /feed.rss {
+        reverse_proxy 127.0.0.1:8000
+    }
+{% endif %}
     handle @backend {
         reverse_proxy 127.0.0.1:8000
     }

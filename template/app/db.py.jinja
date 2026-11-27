@@ -28,6 +28,14 @@ class Database:
                 "CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, text TEXT NOT NULL)"
             )
 
+{% if enable_rss %}
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS feed_items ("
+                "id INTEGER PRIMARY KEY, guid TEXT NOT NULL UNIQUE, title TEXT NOT NULL, "
+                "description TEXT NOT NULL, link TEXT NOT NULL, published TEXT NOT NULL)"
+            )
+{% endif %}
+
     def ready(self) -> bool:
         with self.connect() as connection:
             connection.execute("SELECT id FROM notes LIMIT 1").fetchall()

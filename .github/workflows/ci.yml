@@ -14,7 +14,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
-      - name: Render all 32 feature combinations
+      - name: Render all 64 feature combinations
         run: uv run --no-project --with copier==9.14.1 --with pytest pytest -q tests
   validate:
     needs: render
@@ -28,17 +28,31 @@ jobs:
         events: [false, true]
         mcp: [false, true]
         schema_forms: [false]
+        rss: [false]
         include:
           - jobs: false
             terminal: false
             events: false
             mcp: false
             schema_forms: true
+            rss: false
           - jobs: true
             terminal: true
             events: true
             mcp: true
             schema_forms: true
+          - jobs: false
+            terminal: false
+            events: false
+            mcp: false
+            schema_forms: false
+            rss: true
+          - jobs: true
+            terminal: true
+            events: true
+            mcp: true
+            schema_forms: true
+            rss: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -52,7 +66,8 @@ jobs:
           EVENTS: ${{ matrix.events }}
           MCP: ${{ matrix.mcp }}
           SCHEMA_FORMS: ${{ matrix.schema_forms }}
-        run: uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD -d enable_jobs="$JOBS" -d enable_terminal="$TERMINAL" -d enable_events="$EVENTS" -d enable_mcp="$MCP" -d enable_schema_forms="$SCHEMA_FORMS" . generated
+          RSS: ${{ matrix.rss }}
+        run: uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD -d enable_jobs="$JOBS" -d enable_terminal="$TERMINAL" -d enable_events="$EVENTS" -d enable_mcp="$MCP" -d enable_schema_forms="$SCHEMA_FORMS" -d enable_rss="$RSS" . generated
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: generated/frontend/.node-version
@@ -99,7 +114,7 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: reports-${{ matrix.jobs }}-${{ matrix.terminal }}-${{ matrix.events }}-${{ matrix.mcp }}-${{ matrix.schema_forms }}
+          name: reports-${{ matrix.jobs }}-${{ matrix.terminal }}-${{ matrix.events }}-${{ matrix.mcp }}-${{ matrix.schema_forms }}-${{ matrix.rss }}
           path: |
             generated/backend.xml
             generated/frontend/browser.xml

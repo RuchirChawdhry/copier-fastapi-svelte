@@ -1,0 +1,13 @@
+import { test, expect } from '@playwright/test';
+
+test('RSS discovery and same-origin proxy', async ({ page, request }) => {
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'RSS feed', exact: true })).toHaveAttribute('href', '/feed.rss');
+  await expect(page.locator('link[type="application/rss+xml"]')).toHaveAttribute('href', '/feed.rss');
+  const response = await request.get('/feed.rss');
+  expect(response.ok()).toBeTruthy();
+  expect(response.headers()['content-type']).toContain('application/rss+xml');
+  expect(await response.text()).toContain('<rss');
+  await page.keyboard.press('Control+k');
+  await expect(page.getByText('Copy RSS feed URL', { exact: true })).toBeVisible();
+});

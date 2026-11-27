@@ -61,3 +61,15 @@ The optional schema-generated note form uses SJSF and AJV with the NoteInput sch
 ## Server state
 
 TanStack Query owns API response caching, loading/error state, note mutations and cache invalidation. SSE updates the same notes cache when enabled. Do not duplicate API server state in local component state. Diagnostics and health have a short five-second freshness window; other queries default to 30 seconds. Refresh explicitly re-fetches data.
+
+{% if enable_rss %}
+## RSS updates
+
+Set APP_PUBLIC_URL in .env to the canonical origin at which subscribers reach the application (for example, the Tailscale HTTPS origin). It defaults to http://127.0.0.1:8080. Publish an explicit announcement using the local CLI:
+
+```sh
+uv run python -m app.cli publish-feed "Version 1.0" "Initial release" --link https://example.org/releases/v1
+```
+
+The RSS 2.0 feed is available at /feed.rss through FastAPI, Vite and Caddy. It includes the latest 50 explicitly published announcements, stable UUID GUIDs and publication dates. Feed discovery metadata and the sidebar/command-palette links are included. The command palette can copy the current browser-origin feed URL. RSS uses ETags and supports conditional requests. Notes, diagnostics, private application records and internal logs are never automatically published. The feed is readable by anyone who can reach its endpoint; it is not an authentication boundary. The CLI is the only publishing interface in this starter. No external feed fetching or reader is included.
+{% endif %}

@@ -21,3 +21,5 @@
 - Add left-aligned semantic icons to command and context menu items, preserving visible labels and keyboard navigation. Use accessible switches with persistent settings. Keep SJSF conditional in Copier.
 
 - Use TanStack Query for server state; define reusable query options in src/lib/queries.ts, invalidate relevant keys after mutations, and update the same cache from SSE. Keep local state for UI only.
+
+- If RSS is enabled, publish only explicitly curated announcements using app.rss.publish; never automatically expose private application records. Use feedgenerator for XML generation and /feed.rss for discovery.

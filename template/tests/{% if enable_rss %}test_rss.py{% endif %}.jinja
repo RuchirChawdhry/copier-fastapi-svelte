@@ -1,0 +1,25 @@
+from xml.etree import ElementTree
+
+from app.rss import publish
+
+
+def test_rss_round_trip(client):
+    first = publish("First & latest", "Plain <text>")
+    second = publish("Second", "An update", "https://example.org/releases")
+    client.post("/api/notes", json={"text": "PRIVATE NOTE"})
+    response = client.get("/feed.rss")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/rss+xml")
+    root = ElementTree.fromstring(response.content)
+    assert root.tag == "rss"
+    assert root.attrib["version"] == "2.0"
+    items = root.findall("./channel/item")
+    assert [item.findtext("guid") for item in items][:2] == [second, first]
+    assert items[1].findtext("title") == "First & latest"
+    assert items[1].findtext("description") == "Plain &lt;text&gt;"
+    assert items[0].findtext("pubDate")
+    assert items[0].findtext("link") == "https://example.org/releases"
+    assert "PRIVATE NOTE" not in response.text
+    assert client.get("/feed.rss", headers={"If-None-Match": response.headers["etag"]}).status_code == 304
+    publish("Third", "New item")
+    assert client.get("/feed.rss", headers={"If-None-Match": response.headers["etag"]}).status_code == 200

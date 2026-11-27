@@ -81,3 +81,5 @@ Run `task --list-all` to discover commands. Use `task install`, `task setup`, `t
 ## Navigation and settings
 
 The workspace uses the official Vega shadcn-svelte sidebar with icon collapse (Ctrl/Command+B), mobile sheet navigation, a dropdown action menu, keyboard hints, theme select, accessible switches, item rows, separators, markers and tooltips. Sidebar state persists in a browser cookie. The standard screenshot workflow captures the dropdown and collapsed sidebar in addition to the existing screens.
+
+The Resources navigation menu exposes API documentation, OpenAPI, service health and optional RSS. Notes use shadcn pagination connected to TanStack Table, a bounded Scroll Area, and a Popover containing Range Calendar for inclusive UTC creation-date filtering. New notes receive UTC timestamps; existing notes migrate without inventing a date and remain visible when no date filter is active.

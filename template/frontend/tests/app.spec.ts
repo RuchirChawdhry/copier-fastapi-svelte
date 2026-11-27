@@ -91,3 +91,37 @@ test('mobile sidebar opens and closes on navigation', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+
+
+test('resource navigation, pagination and UTC date filtering', async ({ page, request }) => {
+  const notes = [];
+  for (let i = 0; i < 9; i++) {
+    const response = await request.post('/api/notes', { data: { text: 'Pagination fixture ' + i } });
+    expect(response.ok()).toBeTruthy();
+    notes.push(await response.json() as { id: number });
+  }
+  try {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Resources', exact: true }).click();
+    await expect(page.getByRole('link', { name: /OpenAPI schema/ })).toHaveAttribute('href', '/openapi.json');
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Page 2', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Pagination fixture 8', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Filter by creation date' }).click();
+    await page.getByRole('button', { name: 'Previous month' }).click();
+    await page.getByRole('button', { name: 'Apply range' }).click();
+    await expect(page.getByText('No notes found.')).toBeVisible();
+    await page.getByRole('button', { name: 'Filter by creation date' }).click();
+    await page.getByRole('button', { name: 'Last 7 days' }).click();
+    await page.getByRole('button', { name: 'Apply range' }).click();
+    await expect(page.getByRole('button', { name: 'Pagination fixture 0', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Page 1', exact: true })).toHaveAttribute('aria-current', 'page');
+    await page.getByRole('button', { name: 'Filter by creation date' }).click();
+    await page.getByRole('button', { name: 'Clear filter' }).click();
+    await expect(page.getByRole('button', { name: 'Filter by creation date' })).toContainText('Any date');
+    const viewport = page.locator('[data-slot="scroll-area-viewport"]').first();
+    await expect.poll(() => viewport.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true);
+  } finally {
+    for (const note of notes) await request.delete('/api/notes/' + note.id);
+  }
+});

@@ -9,6 +9,7 @@ def test_health_and_notes(client):
     response = client.post("/api/notes", json={"text": "Example"})
     assert response.status_code == 201
     note = response.json()
+    assert note['created_at'].endswith('Z')
     assert note in client.get("/api/notes").json()
     assert client.delete(f"/api/notes/{note['id']}").status_code == 204
     assert client.delete(f"/api/notes/{note['id']}").status_code == 404
@@ -24,3 +25,17 @@ def test_diagnostics(client):
     assert 0 <= data["cpu_percent"] <= 100
     assert 0 < data["memory_used_bytes"] <= data["memory_total_bytes"]
     assert 0 < data["process_rss_bytes"]
+
+
+def test_legacy_note_migration(tmp_path):
+    from app.db import Database
+
+    path = tmp_path / "legacy.sqlite3"
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE notes (id INTEGER PRIMARY KEY, text TEXT NOT NULL)")
+        connection.execute("INSERT INTO notes (text) VALUES ('Legacy note')")
+    database = Database(path)
+    database.initialize()
+    database.initialize()
+    assert database.notes() == [{"id": 1, "text": "Legacy note", "created_at": None}]
+    assert database.add_note("New note")["created_at"].endswith("Z")

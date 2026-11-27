@@ -1,0 +1,46 @@
+<script lang="ts">
+  import * as Navigation from '$lib/components/ui/navigation-menu/index.js';
+  import BookOpen from '@lucide/svelte/icons/book-open';
+  import Activity from '@lucide/svelte/icons/activity';
+  import FileJson from '@lucide/svelte/icons/file-json';
+{% if enable_rss %}
+  import Rss from '@lucide/svelte/icons/rss';
+{% endif %}
+  const resources = [
+    { title: 'API documentation', href: '/docs', description: 'Explore and test FastAPI endpoints.', icon: BookOpen },
+    { title: 'OpenAPI schema', href: '/openapi.json', description: 'Inspect the generated API contract.', icon: FileJson },
+    { title: 'Service health', href: '/api/health', description: 'Check the backend and its dependencies.', icon: Activity },
+{% if enable_rss %}
+    { title: 'RSS announcements', href: '/feed.rss', description: 'Subscribe to published updates.', icon: Rss },
+{% endif %}
+  ];
+</script>
+
+<Navigation.Root class="hidden md:flex" aria-label="Developer resources">
+  <Navigation.List>
+    <Navigation.Item>
+      <Navigation.Trigger>Resources</Navigation.Trigger>
+      <Navigation.Content>
+        <ul class="grid w-72 gap-1">
+          {#each resources as resource (resource.href)}
+            <li>
+              <Navigation.Link>
+                {#snippet child({ props })}
+                  <a {...props} href={resource.href} target="_blank" rel="noopener noreferrer">
+                    <div class="flex gap-3">
+                      <resource.icon aria-hidden="true" class="mt-0.5 size-4 shrink-0" />
+                      <div class="space-y-1">
+                        <div class="font-medium">{resource.title}</div>
+                        <div class="text-xs text-muted-foreground">{resource.description}</div>
+                      </div>
+                    </div>
+                  </a>
+                {/snippet}
+              </Navigation.Link>
+            </li>
+          {/each}
+        </ul>
+      </Navigation.Content>
+    </Navigation.Item>
+  </Navigation.List>
+</Navigation.Root>

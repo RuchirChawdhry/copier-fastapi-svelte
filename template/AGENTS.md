@@ -25,3 +25,5 @@
 - If RSS is enabled, publish only explicitly curated announcements using task rss:publish (or app.rss.publish inside application code); never automatically expose private application records. Use feedgenerator for XML generation and /feed.rss for discovery.
 
 - Use the vendored shadcn-svelte Vega Sidebar, Dropdown Menu, Item, Kbd, Marker, Select, Separator, Switch and Tooltip components for consistent UI. Preserve accessible names, keyboard navigation, collapsed icon tooltips and mobile navigation.
+
+- Reuse Navigation Menu, Pagination, Popover, Range Calendar and Scroll Area. Keep paging connected to TanStack Table; use real UTC creation dates for note filtering, preserving unknown dates in migrated records.

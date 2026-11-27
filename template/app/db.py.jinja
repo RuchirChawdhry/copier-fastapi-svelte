@@ -2,6 +2,7 @@ import sqlite3
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
+from datetime import UTC, datetime
 
 
 class Database:
@@ -24,9 +25,12 @@ class Database:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("BEGIN IMMEDIATE")
             connection.execute(
-                "CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, text TEXT NOT NULL)"
+                "CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, text TEXT NOT NULL, created_at TEXT)"
             )
+            if "created_at" not in {row["name"] for row in connection.execute("PRAGMA table_info(notes)")}:
+                connection.execute("ALTER TABLE notes ADD COLUMN created_at TEXT")
 
 {% if enable_rss %}
             connection.execute(
@@ -43,12 +47,13 @@ class Database:
 
     def notes(self) -> list[dict]:
         with self.connect() as connection:
-            return [dict(row) for row in connection.execute("SELECT id, text FROM notes ORDER BY id")]
+            return [dict(row) for row in connection.execute("SELECT id, text, created_at FROM notes ORDER BY id")]
 
     def add_note(self, text: str) -> dict:
         with self.connect() as connection:
-            cursor = connection.execute("INSERT INTO notes (text) VALUES (?)", (text,))
-            return {"id": cursor.lastrowid, "text": text}
+            created_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+            cursor = connection.execute("INSERT INTO notes (text, created_at) VALUES (?, ?)", (text, created_at))
+            return {"id": cursor.lastrowid, "text": text, "created_at": created_at}
 
     def delete_note(self, note_id: int) -> bool:
         with self.connect() as connection:

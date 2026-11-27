@@ -15,7 +15,7 @@ test('capture application screens', async ({ page, request }) => {
   for (const note of await (await request.get('/api/notes')).json()) {
     await request.delete('/api/notes/' + note.id);
   }
-  for (const text of ['Review project requirements', 'Prepare API contract', 'Build reusable UI components', 'Verify deployment configuration', 'Document agent workflow']) {
+  for (const text of ['Review project requirements', 'Prepare API contract', 'Build reusable UI components', 'Verify deployment configuration', 'Document agent workflow', 'Review accessibility', 'Test deployment', 'Update documentation', 'Check API responses', 'Review performance']) {
     expect((await request.post('/api/notes', { data: { text } })).ok()).toBeTruthy();
   }
   await page.goto('/');
@@ -23,6 +23,14 @@ test('capture application screens', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'Review project requirements', exact: true })).toBeVisible({ timeout: 20000 });
   await page.getByRole('button', { name: 'Review project requirements', exact: true }).click();
   await capture(page, '01-overview-dark');
+  await page.getByRole('button', { name: 'Resources', exact: true }).click();
+  await expect(page.getByRole('link', { name: /OpenAPI schema/ })).toBeVisible();
+  await capture(page, '12-navigation-menu');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Filter by creation date' }).click();
+  await page.getByRole('button', { name: 'Last 7 days' }).click();
+  await capture(page, '13-date-range-popover');
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Workspace actions' }).click();
   await expect(page.getByRole('menuitem', { name: 'API documentation' })).toBeVisible();
   await capture(page, '10-dropdown-menu');

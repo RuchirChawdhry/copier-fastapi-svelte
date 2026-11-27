@@ -3,6 +3,10 @@
   import Eye from '@lucide/svelte/icons/eye';
   import Copy from '@lucide/svelte/icons/copy';
   import Trash2 from '@lucide/svelte/icons/trash-2';
+  import * as Pagination from '$lib/components/ui/pagination/index.js';
+  import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+  import DateRangeFilter from '$lib/DateRangeFilter.svelte';
+  import type { DateRange } from 'bits-ui';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import { notify } from '$lib/notifications';
@@ -10,6 +14,12 @@
   import type { Note } from '$lib/api';
 
   let { notes, onRemove, onSelect }: { notes: Note[]; onRemove: (id: number) => void; onSelect: (note: Note) => void } = $props();
+  let range = $state<DateRange | undefined>();
+  const filteredNotes = $derived(notes.filter(note => {
+    if (!range?.start || !range.end) return true;
+    const date = note.created_at?.slice(0, 10);
+    return date !== undefined && date >= range.start.toString() && date <= range.end.toString();
+  }));
   const features = tableFeatures({
     columnFilteringFeature, globalFilteringFeature,
     filteredRowModel: createFilteredRowModel(),
@@ -22,15 +32,22 @@
     { accessorKey: 'text', header: 'Note' },
   ];
   const table = createTable({
-    features, columns, get data() { return notes; },
+    features, columns, get data() { return filteredNotes; },
     globalFilterFn: 'includesString',
     initialState: { pagination: { pageIndex: 0, pageSize: 8 } },
   });
+  function setRange(value: DateRange | undefined) {
+    range = value;
+    table.setPageIndex(0);
+  }
 </script>
 
-<input aria-label="Filter notes" placeholder="Filter notes…" value={table.atoms.globalFilter.get() ?? ''} oninput={(event) => table.setGlobalFilter(event.currentTarget.value)} class="mb-3 w-full rounded-md border bg-background px-3 py-2 text-sm" />
-<div class="overflow-x-auto rounded-md border">
-  <table class="w-full text-left text-sm">
+<div class="mb-3 flex flex-wrap items-center gap-2">
+<input aria-label="Filter notes" placeholder="Filter notes…" value={table.atoms.globalFilter.get() ?? ''} oninput={(event) => table.setGlobalFilter(event.currentTarget.value)} class="min-w-32 flex-1 rounded-md border bg-background px-3 py-2 text-sm" />
+<DateRangeFilter {range} onChange={setRange} />
+</div>
+<ScrollArea orientation="both" type="always" class="h-64 w-full rounded-md border" aria-label="Notes table scroll area">
+  <table class="w-full min-w-72 text-left text-sm">
     <thead class="bg-muted text-muted-foreground">
       {#each table.getHeaderGroups() as group (group.id)}
         <tr>
@@ -66,12 +83,24 @@
       {/each}
     </tbody>
   </table>
-</div>
-<div class="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+</ScrollArea>
+<div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
   <span>{table.getPrePaginatedRowModel().rows.length} notes · Page {table.atoms.pagination.get().pageIndex + 1} of {Math.max(1, table.getPageCount())}</span>
-  <div class="flex gap-1">
-    <Button size="sm" variant="outline" disabled={!table.getCanPreviousPage()} onclick={() => table.previousPage()}>Previous</Button>
-    <Button size="sm" variant="outline" disabled={!table.getCanNextPage()} onclick={() => table.nextPage()}>Next</Button>
-  </div>
+  <Pagination.Root count={table.getPrePaginatedRowModel().rows.length} perPage={table.atoms.pagination.get().pageSize} page={table.atoms.pagination.get().pageIndex + 1} onPageChange={(value) => table.setPageIndex(value - 1)} class="mx-0 w-auto">
+    {#snippet children({ pages, currentPage })}
+      <Pagination.Content>
+        <Pagination.Item><Pagination.PrevButton /></Pagination.Item>
+        {#each pages as entry (entry.key)}
+          <Pagination.Item>
+            {#if entry.type === 'ellipsis'}
+              <Pagination.Ellipsis />
+            {:else}
+              <Pagination.Link page={entry} isActive={currentPage === entry.value} size="icon-sm" aria-label={'Page ' + entry.value} />
+            {/if}
+          </Pagination.Item>
+        {/each}
+        <Pagination.Item><Pagination.NextButton /></Pagination.Item>
+      </Pagination.Content>
+    {/snippet}
+  </Pagination.Root>
 </div>
-

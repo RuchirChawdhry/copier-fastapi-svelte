@@ -1,5 +1,6 @@
 import asyncio
 import sqlite3
+from datetime import datetime
 {% if enable_jobs or enable_mcp %}
 from contextlib import AsyncExitStack, asynccontextmanager
 {% else %}
@@ -44,6 +45,7 @@ class NoteInput(BaseModel):
 class Note(BaseModel):
     id: int
     text: str
+    created_at: datetime | None
 
 
 class Health(BaseModel):

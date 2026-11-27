@@ -20,6 +20,7 @@
   import { Switch } from '$lib/components/ui/switch/index.js';
   import { Separator } from '$lib/components/ui/separator/index.js';
   import { Kbd, KbdGroup } from '$lib/components/ui/kbd/index.js';
+  import ResourceNavigation from '$lib/ResourceNavigation.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import * as Dropdown from '$lib/components/ui/dropdown-menu/index.js';
   import * as Item from '$lib/components/ui/item/index.js';
@@ -160,6 +161,7 @@
       <Separator orientation="vertical" class="!h-5" />
       <span class="truncate text-sm font-medium">{page === 'workspace' ? 'Overview' : page === 'settings' ? 'Settings' : 'Diagnostics'}</span>
       <div class="flex-1"></div>
+      <ResourceNavigation />
       <Button variant="outline" onclick={() => palette = true} aria-label="Search commands"><Search class="size-4" /><span class="hidden sm:inline">Search commands</span><KbdGroup class="ml-2 hidden sm:inline-flex"><Kbd>{modifier}</Kbd><Kbd>K</Kbd></KbdGroup></Button>
       <Dropdown.Root>
         <Dropdown.Trigger>
@@ -219,6 +221,7 @@
                 {#if selected}
                   <p class="mb-2 font-mono text-xs text-muted-foreground">ID {selected.id}</p>
                   <p class="break-all text-sm">{selected.text}</p>
+                  <p class="mt-3 text-xs text-muted-foreground">Created: {selected.created_at ? selected.created_at.slice(0, 10) + ' UTC' : 'Unknown'}</p>
                 {:else}
                   <p class="text-sm text-muted-foreground">Select a note to inspect it.</p>
                 {/if}

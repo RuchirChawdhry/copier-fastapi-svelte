@@ -1,9 +1,36 @@
 version: '3'
 tasks:
+  default:
+    cmds: [task --list]
+  tools:setup:
+    desc: Enable pnpm via Corepack (Node must already be installed)
+    cmds:
+      - npm install -g corepack
+      - corepack enable pnpm
   test:
+    desc: Test all Copier feature combinations
     cmds:
       - uv run --no-project --with copier==9.14.1 --with pytest pytest -q tests
   render:
+    desc: Render a project (pass Copier flags and destination after --)
     cmds:
-      - uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD . .generated
-
+      - uvx --from copier==9.14.1 copier copy --vcs-ref=HEAD {{.CLI_ARGS}}
+  render:ci:
+    desc: Render CI matrix variant
+    cmds:
+      - task: render
+        vars:
+          CLI_ARGS: '--defaults -d enable_jobs="$JOBS" -d enable_terminal="$TERMINAL" -d enable_events="$EVENTS" -d enable_mcp="$MCP" -d enable_schema_forms="$SCHEMA_FORMS" -d enable_rss="$RSS" . generated'
+  render:screenshots:
+    desc: Render screenshot example
+    cmds:
+      - task: render
+        vars:
+          CLI_ARGS: "--defaults -d 'project_name=Example Workspace' -d enable_events=true -d enable_schema_forms=true -d enable_rss=true . generated"
+  benchmark:
+    desc: Compare historical and current frontend performance (Linux)
+    cmds:
+      - bash benchmarks/run.sh
+  benchmark:report:
+    cmds:
+      - python benchmarks/report.py benchmark-results/before.json benchmark-results/migration.json benchmark-results/current.json

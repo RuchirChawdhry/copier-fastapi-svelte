@@ -1,7 +1,7 @@
 # Agent instructions
 
-- Start with task setup. Use task dev, task check, task test and task build.
-- Python lives in app; Svelte 5 lives in frontend/src. Use runes and the vendored shadcn-svelte components. Add new components through the registry CLI.
+- Start with task setup. Use Task exclusively for project installation, building, testing, formatting, code generation, dependency changes and development operations. Run task --list to discover commands; add new tasks rather than inventing ad hoc command sequences.
+- Python lives in app; Svelte 5 lives in frontend/src. Use runes and the vendored shadcn-svelte components. Add components through task ui:add.
 - Use shared theme tokens, not component-specific colors. Keep Script → Markup → Style.
 - Prefer maintained libraries and straightforward implementation. No gratuitous abstraction.
 - Use typed FastAPI responses, parameterized SQL, shared Database and cached Settings.
@@ -22,4 +22,4 @@
 
 - Use TanStack Query for server state; define reusable query options in src/lib/queries.ts, invalidate relevant keys after mutations, and update the same cache from SSE. Keep local state for UI only.
 
-- If RSS is enabled, publish only explicitly curated announcements using app.rss.publish; never automatically expose private application records. Use feedgenerator for XML generation and /feed.rss for discovery.
+- If RSS is enabled, publish only explicitly curated announcements using task rss:publish (or app.rss.publish inside application code); never automatically expose private application records. Use feedgenerator for XML generation and /feed.rss for discovery.

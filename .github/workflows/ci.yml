@@ -13,9 +13,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2
+        with:
+          version: 3.x
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
       - name: Render all 64 feature combinations
-        run: uv run --no-project --with copier==9.14.1 --with pytest pytest -q tests
+        run: task test
   validate:
     needs: render
     runs-on: ubuntu-24.04
@@ -58,6 +61,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2
+        with:
+          version: 3.x
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - name: Render selected variant
         env:
@@ -67,7 +73,7 @@ jobs:
           MCP: ${{ matrix.mcp }}
           SCHEMA_FORMS: ${{ matrix.schema_forms }}
           RSS: ${{ matrix.rss }}
-        run: uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD -d enable_jobs="$JOBS" -d enable_terminal="$TERMINAL" -d enable_events="$EVENTS" -d enable_mcp="$MCP" -d enable_schema_forms="$SCHEMA_FORMS" -d enable_rss="$RSS" . generated
+        run: task render:ci
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: generated/frontend/.node-version
@@ -76,41 +82,31 @@ jobs:
         id: install
         working-directory: generated
         run: |
-          npm install -g corepack
-          corepack enable pnpm
-          uv sync
-          cd frontend
-          pnpm install --no-frozen-lockfile
-          cd ..
-          uv run python -m app.cli openapi
-          cd frontend
-          pnpm api:generate
-          pnpm format
+          task -d .. tools:setup
+          task install
+          task ui:format
       - name: Start Redis
         if: matrix.jobs
         working-directory: generated
-        run: docker compose up -d --wait redis
+        run: task jobs:redis
       - name: Backend tests
         working-directory: generated
         run: |
-          uv run ruff check app tests
-          uv run ty check app
-          uv run pytest -q --benchmark-disable --junitxml=backend.xml
-          uv build
+          task api:check-code
+          task test:ci
+          task api:build
       - name: Frontend typecheck and build
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        working-directory: generated/frontend
+        working-directory: generated
         run: |
-          pnpm api:check
-          pnpm lint
-          pnpm format:check
-          pnpm check
-          pnpm build
+          task api:check
+          task ui:check
+          task ui:build
       - name: Browser tests
-        working-directory: generated/frontend
+        working-directory: generated
         run: |
-          pnpm exec playwright install chromium
-          PLAYWRIGHT_JUNIT_OUTPUT_FILE=browser.xml pnpm exec playwright test --reporter=list,junit
+          task browser:install
+          task test:e2e:ci
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

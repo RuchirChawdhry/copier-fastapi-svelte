@@ -13,7 +13,7 @@ task dev
 
 Open http://127.0.0.1:5173. API health: http://127.0.0.1:8000/api/health.
 
-Official shadcn-svelte components are vendored in frontend/src/lib/components/ui. Use the registry CLI only when adding new components. Commit uv/pnpm lockfiles after setup.
+Official shadcn-svelte components are vendored in frontend/src/lib/components/ui. Run `task ui:add -- button dialog` to add registry components. Commit uv/pnpm lockfiles after setup.
 
 ## Production and tailnet
 
@@ -27,12 +27,12 @@ Native browser notifications require permission and localhost or HTTPS. They wor
 
 ## Terminal
 
-Install ttyd (includes xterm.js) on the Linux host. Run as an unprivileged account. Create a strong password hash using caddy hash-password and export it as TERMINAL_PASSWORD_HASH in Caddy's process environment. Run task terminal separately. Caddy protects terminal HTTP and WebSocket routes with basic authentication (username operator). Open through Caddy, not Vite. Do not expose ttyd directly; a shell has the privileges of the host account.
+Install ttyd (includes xterm.js) on the Linux host. Run as an unprivileged account. Create a strong password hash using Caddy's hash-password command and export it as TERMINAL_PASSWORD_HASH in Caddy's process environment. Run task terminal separately. Caddy protects terminal HTTP and WebSocket routes with basic authentication (username operator). Open through Caddy, not Vite. Do not expose ttyd directly; a shell has the privileges of the host account.
 {% endif %}
 
 ## Development
 
-task check, task fix, task test, task test:e2e, task build. Install Chromium using cd frontend && pnpm exec playwright install chromium (then return to the project root). Setup installs pre-commit hooks if this project is already a Git repository. Otherwise run task hooks:install after git init.
+task check, task fix, task test, task test:e2e, task build. `task setup` installs Chromium; use `task browser:install` to reinstall or `task browser:install-deps` for Linux OS dependencies if required. Setup installs pre-commit hooks if this project is already a Git repository. Otherwise run task hooks:install after git init.
 
 
 ## Reusable UI
@@ -68,8 +68,12 @@ TanStack Query owns API response caching, loading/error state, note mutations an
 Set APP_PUBLIC_URL in .env to the canonical origin at which subscribers reach the application (for example, the Tailscale HTTPS origin). It defaults to http://127.0.0.1:8080. Publish an explicit announcement using the local CLI:
 
 ```sh
-uv run python -m app.cli publish-feed "Version 1.0" "Initial release" --link https://example.org/releases/v1
+task rss:publish -- "Version 1.0" "Initial release" --link https://example.org/releases/v1
 ```
 
 The RSS 2.0 feed is available at /feed.rss through FastAPI, Vite and Caddy. It includes the latest 50 explicitly published announcements, stable UUID GUIDs and publication dates. Feed discovery metadata and the sidebar/command-palette links are included. The command palette can copy the current browser-origin feed URL. RSS uses ETags and supports conditional requests. Notes, diagnostics, private application records and internal logs are never automatically published. The feed is readable by anyone who can reach its endpoint; it is not an authentication boundary. The CLI is the only publishing interface in this starter. No external feed fetching or reader is included.
 {% endif %}
+
+## Task command interface
+
+Run `task --list` to discover commands. Use `task install`, `task setup`, `task dev`, `task build`, `task serve`, `task check`, `task fix`, `task test`, `task test:all`, `task test:e2e`, `task screenshots`, `task benchmark`, `task db:init`, `task api:generate`, `task api:check`. Add packages with `task api:add -- package` or `task ui:dependency:add -- package`. Install platform prerequisites (Go Task, uv, Node, pnpm and any optional system services) first; the Taskfile owns project-level operations, not system package management.

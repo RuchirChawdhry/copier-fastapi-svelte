@@ -5,20 +5,28 @@ tasks:
   install:
     desc: Install backend and frontend dependencies
     cmds:
-      - uv sync
+      - task: api:install
       - task: ui:install
       - task: api:generate
+  api:install:
+    cmds:
+      - uv sync
   ui:install:
     dir: frontend
     cmds:
-      - pnpm install
+      - pnpm install --no-frozen-lockfile
   setup:
     desc: Install dependencies and initialize database
     cmds:
       - task: install
-      - uv run python -m app.cli init-db
+      - task: db:init
       - task: ui:format
+      - task: browser:install
       - task: hooks:install
+  db:init:
+    desc: Initialize SQLite database
+    cmds:
+      - uv run python -m app.cli init-db
   hooks:install:
     desc: Install pre-commit hooks in Git projects
     status:
@@ -60,11 +68,23 @@ tasks:
     cmds:
       - task: api:generate
       - task: ui:build
+      - task: api:build
+  api:build:
+    desc: Build Python wheel and source distribution
+    cmds:
       - uv build
   ui:build:
     dir: frontend
     cmds:
       - pnpm build
+  ui:preview:
+    dir: frontend
+    cmds:
+      - pnpm preview
+  ui:serve:
+    cmds:
+      - task: ui:build
+      - task: ui:preview
   serve:
     desc: Run API and Caddy after building
     cmds:
@@ -80,12 +100,44 @@ tasks:
     cmds:
       - tailscale serve --bg http://127.0.0.1:8080
   test:
+    desc: Run backend tests (optional pytest arguments after --)
     cmds:
-      - uv run pytest -q
+      - uv run pytest -q {% raw %}{{.CLI_ARGS}}{% endraw %}
+  test:all:
+    desc: Run backend and browser tests
+    cmds:
+      - task: test
+      - task: test:e2e
+  test:ci:
+    desc: Backend tests with JUnit report
+    cmds:
+      - uv run pytest -q --benchmark-disable --junitxml=backend.xml
+  benchmark:
+    desc: Run backend performance benchmarks
+    cmds:
+      - uv run pytest -q --benchmark-only {% raw %}{{.CLI_ARGS}}{% endraw %}
+  browser:install:
+    desc: Install Chromium for Playwright
+    dir: frontend
+    cmds:
+      - pnpm exec playwright install chromium
+  browser:install-deps:
+    desc: Install Chromium and Linux OS dependencies if needed
+    dir: frontend
+    cmds:
+      - pnpm exec playwright install --with-deps chromium
   test:e2e:
     dir: frontend
     cmds:
-      - pnpm exec playwright test
+      - pnpm exec playwright test {% raw %}{{.CLI_ARGS}}{% endraw %}
+  test:e2e:ci:
+    desc: Run browser tests against prebuilt assets and produce JUnit report
+    dir: frontend
+    env:
+      PLAYWRIGHT_JUNIT_OUTPUT_FILE: browser.xml
+      APP_PREBUILT: '1'
+    cmds:
+      - pnpm exec playwright test --reporter=list,junit
   screenshots:
     desc: Capture real browser screenshots
     dir: frontend
@@ -93,10 +145,13 @@ tasks:
       - pnpm exec playwright test --config playwright.screenshots.config.ts
   check:
     cmds:
-      - uv run ruff check app tests
-      - uv run ty check app
+      - task: api:check-code
       - task: api:check
       - task: ui:check
+  api:check-code:
+    cmds:
+      - uv run ruff check app tests
+      - uv run ty check app
   ui:check:
     dir: frontend
     cmds:
@@ -114,14 +169,50 @@ tasks:
     cmds:
       - pnpm lint:fix
       - pnpm format
+  ui:add:
+    desc: Add shadcn-svelte components (names after --)
+    dir: frontend
+    cmds:
+      - pnpm exec shadcn-svelte add {% raw %}{{.CLI_ARGS}}{% endraw %}
+  api:add:
+    desc: Add Python dependencies (arguments after --)
+    cmds:
+      - uv add {% raw %}{{.CLI_ARGS}}{% endraw %}
+  ui:dependency:add:
+    desc: Add frontend dependencies (arguments after --)
+    dir: frontend
+    cmds:
+      - pnpm add {% raw %}{{.CLI_ARGS}}{% endraw %}
+  hooks:ruff:
+    cmds:
+      - uv run ruff check --fix {% raw %}{{.CLI_ARGS}}{% endraw %}
+  hooks:ruff-format:
+    cmds:
+      - uv run ruff format {% raw %}{{.CLI_ARGS}}{% endraw %}
+  hooks:eslint:
+    cmds:
+      - uv run python scripts/frontend_hook.py eslint {% raw %}{{.CLI_ARGS}}{% endraw %}
+  hooks:prettier:
+    cmds:
+      - uv run python scripts/frontend_hook.py prettier {% raw %}{{.CLI_ARGS}}{% endraw %}
   ui:format:
     dir: frontend
     cmds:
       - pnpm format
+{% if enable_rss %}
+  rss:publish:
+    desc: Publish an RSS announcement (title, description and optional --link after --)
+    cmds:
+      - uv run python -m app.cli publish-feed {% raw %}{{.CLI_ARGS}}{% endraw %}
+{% endif %}
 {% if enable_jobs %}
   jobs:redis:
     cmds:
       - docker compose up -d --wait redis
+  jobs:stop:
+    desc: Stop Redis
+    cmds:
+      - docker compose stop redis
   jobs:worker:
     cmds:
       - uv run taskiq worker app.jobs:broker --workers 1

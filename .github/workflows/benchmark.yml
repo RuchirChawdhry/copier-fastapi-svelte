@@ -14,37 +14,18 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2
+        with:
+          version: 3.x
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
           package-manager-cache: false
       - name: Measure three revisions sequentially on one runner
-        shell: bash
-        run: |
-          npm install -g corepack
-          corepack enable pnpm
-          mkdir -p benchmark-results
-          for entry in 'SvelteKit + Superforms|366e3a8b6107c7338207ec1209c2e9618c39dcbd|before' 'Standalone + TanStack Form|829e4345d9623c9bf7e77adfa4d48e7e28702395|migration' "Standalone + Form + Query|${GITHUB_SHA}|current"; do
-            IFS='|' read -r label revision name <<< "$entry"
-            dest="$RUNNER_TEMP/benchmark-$name"
-            uvx --from copier==9.14.1 copier copy --defaults --vcs-ref="$revision" . "$dest"
-            (
-              cd "$dest"
-              uv sync
-              uv run python -m app.cli openapi
-              cd frontend
-              pnpm install --no-frozen-lockfile
-              pnpm api:generate
-              pnpm exec playwright install chromium
-              cp "$GITHUB_WORKSPACE/benchmarks/measure.mjs" ./measure.mjs
-              node measure.mjs "$label" "$revision" "$GITHUB_WORKSPACE/benchmark-results/$name.json"
-              cp pnpm-lock.yaml "$GITHUB_WORKSPACE/benchmark-results/$name-pnpm-lock.yaml"
-              cp ../uv.lock "$GITHUB_WORKSPACE/benchmark-results/$name-uv.lock"
-            )
-          done
+        run: task benchmark
       - name: Report measured results
-        run: python benchmarks/report.py benchmark-results/before.json benchmark-results/migration.json benchmark-results/current.json
+        run: task benchmark:report
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:

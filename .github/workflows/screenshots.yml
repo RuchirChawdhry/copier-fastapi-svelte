@@ -14,9 +14,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2
+        with:
+          version: 3.x
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
       - name: Generate example application
-        run: uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD -d 'project_name=Example Workspace' -d enable_events=true -d enable_schema_forms=true . generated
+        run: task render:screenshots
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: generated/frontend/.node-version
@@ -24,22 +27,15 @@ jobs:
       - name: Install dependencies
         working-directory: generated
         run: |
-          npm install -g corepack
-          corepack enable pnpm
-          uv sync
-          cd frontend
-          pnpm install --no-frozen-lockfile
-          cd ..
-          uv run python -m app.cli openapi
-          cd frontend
-          pnpm api:generate
-          pnpm exec playwright install --with-deps chromium
+          task -d .. tools:setup
+          task install
+          task browser:install
       - name: Capture screenshots
         timeout-minutes: 5
-        working-directory: generated/frontend
+        working-directory: generated
         env:
           SCREENSHOTS_DIR: ${{ github.workspace }}/screenshots
-        run: pnpm exec playwright test --config playwright.screenshots.config.ts
+        run: task screenshots
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: screenshots

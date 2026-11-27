@@ -18,4 +18,6 @@ API types are generated from FastAPI OpenAPI using task api:generate. ESLint, ty
 
 See the [frontend benchmark](benchmarks/2026-11-27.md) for measured SvelteKit versus standalone Svelte build and startup performance. Re-run the Frontend benchmark workflow to collect fresh measurements.
 
-Optional RSS publishing uses feedgenerator and exposes /feed.rss with automatic browser discovery and command-palette links. Announcements are explicitly published with the CLI, never derived from private notes.
+Optional RSS publishing uses feedgenerator and exposes /feed.rss with automatic browser discovery and command-palette links. Announcements are explicitly published with task rss:publish, never derived from private notes.
+
+Go Task is the development command interface, including template rendering, validation, screenshots and benchmarks. Run `task --list` in the template or generated project. GitHub Actions delegates development commands to the same Taskfiles.

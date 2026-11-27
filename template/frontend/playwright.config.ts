@@ -6,8 +6,8 @@ export default defineConfig({
   testIgnore: '**/screenshots.spec.ts',
   use: { baseURL: 'http://127.0.0.1:5173', viewport: { width: 1280, height: 800 }, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   webServer: [
-    { command: 'uv run python -m app.cli serve', cwd: '..', url: 'http://127.0.0.1:8000/api/health/live', env: { APP_DATABASE: 'data/e2e.sqlite3' }, reuseExistingServer: false },
-    { command: 'pnpm build && pnpm preview', url: 'http://127.0.0.1:5173', reuseExistingServer: false, timeout: 120000 },
+    { command: 'task api:serve', cwd: '..', url: 'http://127.0.0.1:8000/api/health/live', env: { APP_DATABASE: 'data/e2e.sqlite3' }, reuseExistingServer: false },
+    { command: process.env.APP_PREBUILT === '1' ? 'task ui:preview' : 'task ui:serve', cwd: '..', url: 'http://127.0.0.1:5173', reuseExistingServer: false, timeout: 120000 },
   ],
 });
 

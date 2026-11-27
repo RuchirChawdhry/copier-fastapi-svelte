@@ -213,16 +213,16 @@
   <Command.List>
     <Command.Empty>No commands found.</Command.Empty>
     <Command.Group heading="Navigation">
-      <Command.Item value="open overview" onSelect={() => action(() => page = 'workspace')}><LayoutDashboard aria-hidden="true" class="size-4 shrink-0" /> Open overview</Command.Item>
-      <Command.Item value="open settings" onSelect={() => action(() => page = 'settings')}><Settings aria-hidden="true" class="size-4 shrink-0" /> Open settings</Command.Item>
-      <Command.Item value="open diagnostics" onSelect={() => action(() => page = 'diagnostics')}><Activity aria-hidden="true" class="size-4 shrink-0" /> Open diagnostics</Command.Item>
-      <Command.Item value="refresh data" onSelect={() => action(refresh)}><RefreshCw aria-hidden="true" class="size-4 shrink-0" /> Refresh data</Command.Item>
-      <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}><Bell aria-hidden="true" class="size-4 shrink-0" /> Test notification</Command.Item>
+      <Command.Item value="open overview" onSelect={() => action(() => page = 'workspace')}><LayoutDashboard aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open overview</Command.Item>
+      <Command.Item value="open settings" onSelect={() => action(() => page = 'settings')}><Settings aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open settings</Command.Item>
+      <Command.Item value="open diagnostics" onSelect={() => action(() => page = 'diagnostics')}><Activity aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open diagnostics</Command.Item>
+      <Command.Item value="refresh data" onSelect={() => action(refresh)}><RefreshCw aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Refresh data</Command.Item>
+      <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}><Bell aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Test notification</Command.Item>
     </Command.Group>
     <Command.Group heading="Appearance">
       {#each themes as option (option.id)}
         {@const Icon = themeIcons[option.id]}
-        <Command.Item value={'theme ' + option.label} onSelect={() => action(() => setTheme(option.id))}><Icon aria-hidden="true" class="size-4 shrink-0" /> Theme: {option.label}</Command.Item>
+        <Command.Item value={'theme ' + option.label} onSelect={() => action(() => setTheme(option.id))}><Icon aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Theme: {option.label}</Command.Item>
       {/each}
     </Command.Group>
   </Command.List>

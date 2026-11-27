@@ -20,7 +20,7 @@ test('notes, context menu, command palette and five persisted themes', async ({ 
   await page.keyboard.press('Escape');
   await page.keyboard.press('Control+k');
   await expect(page.getByPlaceholder('Type a command…')).toBeVisible();
-  await expect(page.getByText('Open settings', { exact: true }).locator('svg')).toHaveCount(1);
+  await expect(page.getByText('Open settings', { exact: true }).locator('[data-menu-icon]')).toHaveCount(1);
   await page.getByText('Open settings', { exact: true }).click();
   await page.getByRole('switch', { name: 'Reduce motion' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', '');

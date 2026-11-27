@@ -6,8 +6,11 @@ test('notes, context menu, command palette and five persisted themes', async ({ 
   const note = 'Browser integration ' + Date.now();
   await page.getByRole('textbox', { name: 'New note' }).fill(note);
   await page.getByRole('button', { name: 'Add note' }).click();
-  await expect(page.getByText(note)).toBeVisible();
-  await page.getByText(note).click({ button: 'right' });
+  await expect(page.getByText(note, { exact: true })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Filter notes' }).fill('no matching value');
+  await expect(page.getByText('No notes found.')).toBeVisible();
+  await page.getByRole('textbox', { name: 'Filter notes' }).clear();
+  await page.getByRole('button', { name: note, exact: true }).click({ button: 'right' });
   await expect(page.getByRole('menuitem', { name: 'Delete note' })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.keyboard.press('Control+k');
@@ -22,8 +25,10 @@ test('notes, context menu, command palette and five persisted themes', async ({ 
   }
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'solarized-dark');
-  await page.getByText(note).click({ button: 'right' });
+  await page.getByRole('button', { name: note, exact: true }).click({ button: 'right' });
   await page.getByRole('menuitem', { name: 'Delete note' }).click();
-  await expect(page.getByText(note)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: note, exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Diagnostics' }).click();
+  await expect(page.getByText('API process RAM (RSS)')).toBeVisible();
 });
 

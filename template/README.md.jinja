@@ -31,3 +31,17 @@ Install ttyd (includes xterm.js) on the Linux host. Run as an unprivileged accou
 
 task check, task fix, task test, task test:e2e, task build. Install Chromium using cd frontend && pnpm exec playwright install chromium (then return to the project root). After git init, install hooks using uv run pre-commit install.
 
+
+## Reusable UI
+
+SvelteKit is configured as a static SPA (SSR disabled), solely for supported Formsnap/Superforms integration. FastAPI remains the sole application backend. Build output remains frontend/dist. The example notes screen includes TanStack sorting, filtering, pagination, PaneForge resizable/persistent layout, and Zod/Formsnap validation. The diagnostics screen uses psutil host and process metrics.
+{% if enable_events %}
+
+## Live updates
+
+The optional /api/events SSE stream sends current notes on connection and when the database changes, including changes made by another process such as a Taskiq worker. EventSource reconnects automatically. The browser displays a toast and, if granted permission, a native notification. The starter polls SQLite once per second per connected client; it does not provide durable event history or push while the page is closed.
+{% endif %}
+
+## Screenshots
+
+Run task screenshots after installing Chromium. The Playwright capture suite saves real PNGs in screenshots/ using a dedicated test database. The source template has a manual Screenshots workflow to publish images.

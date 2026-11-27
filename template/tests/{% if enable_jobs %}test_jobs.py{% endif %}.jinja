@@ -1,11 +1,11 @@
 import subprocess
-import sys
+import shutil
 import time
 
 
 def test_background_note(client):
     worker = subprocess.Popen(
-        [sys.executable, "-m", "taskiq", "worker", "app.jobs:broker", "--workers", "1"]
+        [shutil.which("taskiq") or "taskiq", "worker", "app.jobs:broker", "--workers", "1"]
     )
     try:
         response = client.post("/api/jobs", json={"text": "Background note"})

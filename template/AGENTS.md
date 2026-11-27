@@ -9,3 +9,8 @@
 - Add focused tests for meaningful changes; strict test-first sequencing is not required.
 - Never expose ttyd, API or MCP publicly without appropriate access controls.
 - Run checks and verify behavior before reporting completion.
+
+- Reuse NoteForm, NotesTable and PaneForge rather than inventing form, table or resize behavior. Use Zod for client validation and Pydantic for authoritative server validation.
+- SvelteKit is static SPA only; do not add a second application backend or server actions.
+- Diagnostics use psutil. Keep optional SSE and Taskiq dependencies/files conditional in Copier.
+- Run task screenshots to verify visuals using a dedicated test database.

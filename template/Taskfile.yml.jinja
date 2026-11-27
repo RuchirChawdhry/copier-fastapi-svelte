@@ -1,7 +1,7 @@
 version: '3'
 tasks:
   default:
-    cmds: [task --list]
+    cmds: [task --list-all]
   install:
     desc: Install backend and frontend dependencies
     cmds:
@@ -178,11 +178,24 @@ tasks:
     desc: Add Python dependencies (arguments after --)
     cmds:
       - uv add {% raw %}{{.CLI_ARGS}}{% endraw %}
+  api:remove:
+    desc: Remove Python dependencies (arguments after --)
+    cmds:
+      - uv remove {% raw %}{{.CLI_ARGS}}{% endraw %}
   ui:dependency:add:
     desc: Add frontend dependencies (arguments after --)
     dir: frontend
     cmds:
       - pnpm add {% raw %}{{.CLI_ARGS}}{% endraw %}
+  ui:dependency:remove:
+    desc: Remove frontend dependencies (arguments after --)
+    dir: frontend
+    cmds:
+      - pnpm remove {% raw %}{{.CLI_ARGS}}{% endraw %}
+  hooks:check:
+    desc: Run pre-commit against all tracked files
+    cmds:
+      - uv run pre-commit run --all-files
   hooks:ruff:
     cmds:
       - uv run ruff check --fix {% raw %}{{.CLI_ARGS}}{% endraw %}

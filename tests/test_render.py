@@ -44,3 +44,9 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss):
     assert ("/feed.rss" in (tmp_path / "frontend/index.html").read_text()) == rss
     assert ("/feed.rss" in (tmp_path / "Caddyfile").read_text()) == rss
     assert ("/feed.rss" in (tmp_path / "frontend/vite.config.ts").read_text()) == rss
+
+    taskfile = (tmp_path / "Taskfile.yml").read_text()
+    assert ("rss:publish:" in taskfile) == rss
+    assert "{{.CLI_ARGS}}" in taskfile
+    assert "task: browser:install" in taskfile
+    assert "test:e2e:ci:" in taskfile

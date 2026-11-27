@@ -31,5 +31,7 @@ lines += [
 ]
 report = "\n".join(lines) + "\n"
 print(report)
-Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a").write(report)
+if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+    with Path(summary).open("a") as stream:
+        stream.write(report)
 Path("benchmark-results/report.md").write_text(report)

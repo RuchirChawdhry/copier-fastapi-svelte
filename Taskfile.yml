@@ -1,7 +1,7 @@
 version: '3'
 tasks:
   default:
-    cmds: [task --list]
+    cmds: [task --list-all]
   tools:setup:
     desc: Enable pnpm via Corepack (Node must already be installed)
     cmds:
@@ -31,6 +31,7 @@ tasks:
     desc: Compare historical and current frontend performance (Linux)
     cmds:
       - bash benchmarks/run.sh
+      - task: benchmark:report
   benchmark:report:
     cmds:
       - python benchmarks/report.py benchmark-results/before.json benchmark-results/migration.json benchmark-results/current.json

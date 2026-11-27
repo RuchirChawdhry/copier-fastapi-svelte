@@ -6,7 +6,11 @@ tasks:
     desc: Install backend and frontend dependencies
     cmds:
       - uv sync
-      - pnpm --dir frontend install
+      - task: ui:install
+  ui:install:
+    dir: frontend
+    cmds:
+      - pnpm install
   setup:
     desc: Install dependencies and initialize database
     cmds:
@@ -20,13 +24,18 @@ tasks:
     cmds:
       - uv run python -m app.cli serve --reload
   ui:dev:
+    dir: frontend
     cmds:
-      - pnpm --dir frontend dev
+      - pnpm dev
   build:
     desc: Build frontend and Python distribution
     cmds:
-      - pnpm --dir frontend build
+      - task: ui:build
       - uv build
+  ui:build:
+    dir: frontend
+    cmds:
+      - pnpm build
   serve:
     desc: Run API and Caddy after building
     cmds:
@@ -45,18 +54,27 @@ tasks:
     cmds:
       - uv run pytest -q
   test:e2e:
+    dir: frontend
     cmds:
-      - pnpm --dir frontend exec playwright test
+      - pnpm exec playwright test
   check:
     cmds:
       - uv run ruff check app tests
       - uv run ty check app
-      - pnpm --dir frontend check
+      - task: ui:check
+  ui:check:
+    dir: frontend
+    cmds:
+      - pnpm check
   fix:
     cmds:
       - uv run ruff check --fix app tests
       - uv run ruff format app tests
-      - pnpm --dir frontend format
+      - task: ui:format
+  ui:format:
+    dir: frontend
+    cmds:
+      - pnpm format
 {% if enable_jobs %}
   jobs:redis:
     cmds:

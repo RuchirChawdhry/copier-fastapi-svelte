@@ -1,3 +1,5 @@
+import json
+
 from mcp.shared.inbound import MCP_METHOD_HEADER, MCP_NAME_HEADER, MCP_PROTOCOL_VERSION_HEADER
 from mcp_types import (
     CLIENT_CAPABILITIES_META_KEY,
@@ -36,6 +38,11 @@ def test_application_mcp(client):
     assert protocol in discovery["supportedVersions"]
     assert discovery["_meta"][SERVER_INFO_META_KEY]["name"].endswith("-app")
     assert {tool["name"] for tool in call("tools/list", 2)["tools"]} == {"list_notes"}
-    result = call("tools/call", 3, name="list_notes", arguments={})
-    assert not result.get("isError", False)
-    assert result["content"]
+    note = client.post("/api/notes", json={"text": "MCP protocol test note"})
+    assert note.status_code == 201
+    try:
+        result = call("tools/call", 3, name="list_notes", arguments={})
+        assert not result.get("isError", False)
+        assert "MCP protocol test note" in json.dumps(result)
+    finally:
+        assert client.delete(f'/api/notes/{note.json()["id"]}').status_code == 204

@@ -6,7 +6,18 @@ on:
 permissions:
   contents: read
 jobs:
+  render:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+      - name: Render all sixteen feature combinations
+        run: uv run --no-project --with copier==9.14.1 --with pytest pytest -q tests
   validate:
+    needs: render
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
@@ -22,8 +33,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-      - name: Render contract tests
-        run: uv run --no-project --with copier==9.14.1 --with pytest pytest -q tests
       - name: Render selected variant
         env:
           JOBS: ${{ matrix.jobs }}

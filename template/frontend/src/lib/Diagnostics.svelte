@@ -16,7 +16,7 @@
   <div class="flex items-center justify-between"><div><h1 class="text-3xl font-semibold tracking-tight">System diagnostics</h1><p class="mt-1 text-sm text-muted-foreground">Live metrics from the backend host.</p></div><Button variant="outline" onclick={refresh}>Refresh metrics</Button></div>
   {#if data}
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {#each [{ label: 'CPU', percent: data.cpu_percent, detail: data.logical_cpus + ' logical CPUs' }, { label: 'Memory', percent: 100 * data.memory_used_bytes / data.memory_total_bytes, detail: gib(data.memory_used_bytes) + ' / ' + gib(data.memory_total_bytes) }, { label: 'Disk', percent: 100 * data.disk_used_bytes / data.disk_total_bytes, detail: gib(data.disk_used_bytes) + ' / ' + gib(data.disk_total_bytes) }] as metric}
+      {#each [{ label: 'CPU', percent: data.cpu_percent, detail: data.logical_cpus + ' logical CPUs' }, { label: 'Memory', percent: 100 * data.memory_used_bytes / data.memory_total_bytes, detail: gib(data.memory_used_bytes) + ' / ' + gib(data.memory_total_bytes) }, { label: 'Disk', percent: 100 * data.disk_used_bytes / data.disk_total_bytes, detail: gib(data.disk_used_bytes) + ' / ' + gib(data.disk_total_bytes) }] as metric (metric.label)}
         <div class="rounded-lg border bg-card p-5">
           <p class="text-sm text-muted-foreground">{metric.label}</p>
           <p class="mt-2 text-2xl font-semibold">{metric.percent.toFixed(1)}%</p>

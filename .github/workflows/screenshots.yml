@@ -1,8 +1,6 @@
 name: Screenshots
 on:
   workflow_dispatch:
-  push:
-    paths: ['.github/workflows/screenshots.yml']
 permissions:
   contents: write
 concurrency:

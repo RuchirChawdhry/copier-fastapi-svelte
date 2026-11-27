@@ -104,7 +104,7 @@
       <Button variant={page === 'settings' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'settings'}><Settings class="size-4" /> Settings</Button>
       <Button variant={page === 'diagnostics' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'diagnostics'}><Activity class="size-4" /> Diagnostics</Button>
       <div class="flex-1"></div>
-      <a class="hidden px-3 py-2 text-xs text-muted-foreground md:block" href="/api/health" target="_blank" rel="noreferrer">API health ↗</a>
+      <a class="hidden px-3 py-2 text-xs text-muted-foreground md:block" href="/api/health" target="_blank" rel="external noreferrer">API health ↗</a>
     </aside>
     <main class="space-y-6 p-5 md:p-9">
       {#if page === 'workspace'}
@@ -150,7 +150,7 @@
           <h2 class="text-lg font-semibold">Appearance</h2>
           <p class="mb-4 text-sm text-muted-foreground">Theme preference is saved on this browser.</p>
           <div class="flex flex-wrap gap-2">
-            {#each themes as option}
+            {#each themes as option (option.id)}
               <Button variant={theme === option.id ? 'default' : 'outline'} aria-pressed={theme === option.id} onclick={() => setTheme(option.id)}>{option.label}</Button>
             {/each}
           </div>
@@ -180,7 +180,7 @@
       <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}>Test notification</Command.Item>
     </Command.Group>
     <Command.Group heading="Appearance">
-      {#each themes as option}
+      {#each themes as option (option.id)}
         <Command.Item value={'theme ' + option.label} onSelect={() => action(() => setTheme(option.id))}>Theme: {option.label}</Command.Item>
       {/each}
     </Command.Group>

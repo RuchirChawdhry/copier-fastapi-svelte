@@ -6,17 +6,17 @@
   import { translation } from '@sjsf/form/translations/en';
   import { createFormValidator } from '@sjsf/ajv8-validator';
   import { theme } from '@sjsf/basic-theme';
-  import '@sjsf/basic-theme/css/basic.css';
   import openapi from '../../../../openapi.json';
   import { toast } from 'svelte-sonner';
 
   let { onSave }: { onSave: (text: string) => Promise<void> } = $props();
-  const schema: Schema = openapi.components.schemas.NoteInput as Schema;
+  const schema: Schema = { ...openapi.components.schemas.NoteInput, title: '' } as Schema;
 </script>
 
-<section class="rounded-lg border bg-card p-5">
-  <h2 class="text-lg font-semibold">Schema-generated note</h2>
-  <p class="mb-4 text-sm text-muted-foreground">Generated from the FastAPI NoteInput JSON Schema.</p>
+<section aria-labelledby="schema-note-heading" class="rounded-lg border bg-card p-5">
+  <h2 id="schema-note-heading" class="text-lg font-semibold">Schema-generated note</h2>
+  <p class="mb-4 text-sm text-muted-foreground">Form fields and validation are generated from the API schema.</p>
+  <div class="schema-form max-w-xl text-sm">
   <SimpleForm {schema} {theme} {resolver} {translation}
     merger={createFormMerger} idBuilder={createFormIdBuilder}
     validator={createFormValidator<{ text: string }>}
@@ -24,4 +24,50 @@
       try { await onSave(value.text); }
       catch (error) { toast.error(String(error)); }
     }} />
+  </div>
 </section>
+
+<style>
+  .schema-form :global(form) {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .schema-form :global(fieldset) {
+    min-width: 0;
+    display: grid;
+    gap: 0.5rem;
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+  .schema-form :global(legend:empty) { display: none; }
+  .schema-form :global(label) { font-weight: 500; }
+  .schema-form :global(input:not([type='hidden'])) {
+    display: block;
+    width: 100%;
+    min-height: 2.5rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--input);
+    border-radius: calc(var(--radius) * 0.8);
+    background: var(--background);
+    color: var(--foreground);
+  }
+  .schema-form :global(input:focus-visible),
+  .schema-form :global(button:focus-visible) {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .schema-form :global(button) {
+    justify-self: start;
+    min-height: 2.25rem;
+    padding: 0.5rem 1rem;
+    border-radius: calc(var(--radius) * 0.8);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 500;
+  }
+  .schema-form :global(button:disabled) { opacity: 0.5; }
+  .schema-form :global([role='alert']) { color: var(--destructive); }
+  .schema-form :global([aria-invalid='true']) { border-color: var(--destructive); }
+</style>

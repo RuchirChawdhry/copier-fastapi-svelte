@@ -11,6 +11,8 @@ concurrency:
 jobs:
   preflight:
     runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -27,58 +29,18 @@ jobs:
             template/pyproject.toml.jinja
             template/.python-version
             Taskfile.yml
-      - name: Render and lint all 128 feature combinations
+      - name: Render and lint pairwise feature configurations
         run: task test
+      - name: Export validated feature matrix
+        id: matrix
+        run: echo "value=$(jq -c . tests/feature-matrix.json)" >> "$GITHUB_OUTPUT"
   validate:
     needs: preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
-      matrix:
-        jobs: [false, true]
-        terminal: [false, true]
-        events: [false, true]
-        mcp: [false, true]
-        schema_forms: [false]
-        rss: [false]
-        ntfy: [false]
-        include:
-          - jobs: false
-            terminal: false
-            events: false
-            mcp: false
-            schema_forms: true
-            rss: false
-            ntfy: false
-          - jobs: true
-            terminal: true
-            events: true
-            mcp: true
-            schema_forms: true
-            rss: false
-            ntfy: false
-          - jobs: false
-            terminal: false
-            events: false
-            mcp: false
-            schema_forms: false
-            rss: true
-            ntfy: false
-          - jobs: true
-            terminal: true
-            events: true
-            mcp: true
-            schema_forms: true
-            rss: true
-            ntfy: true
-          - jobs: false
-            terminal: false
-            events: false
-            mcp: false
-            schema_forms: false
-            rss: false
-            ntfy: true
+      matrix: ${{ fromJSON(needs.preflight.outputs.matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -139,7 +101,7 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: reports-${{ matrix.jobs }}-${{ matrix.terminal }}-${{ matrix.events }}-${{ matrix.mcp }}-${{ matrix.schema_forms }}-${{ matrix.rss }}-${{ matrix.ntfy || false }}
+          name: reports-${{ matrix.name }}
           path: |
             generated/backend.xml
             generated/frontend/browser.xml

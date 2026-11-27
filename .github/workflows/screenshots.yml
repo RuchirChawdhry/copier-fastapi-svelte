@@ -14,7 +14,7 @@ permissions:
   contents: write
 concurrency:
   group: screenshots
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   screenshots:
     runs-on: ubuntu-24.04
@@ -48,13 +48,15 @@ jobs:
         timeout-minutes: 10
         working-directory: generated
         env:
-          SCREENSHOTS_DIR: ${{ runner.temp }}/captured-screenshots
-        run: task screenshots
+          SCREENSHOTS_DIR: ${{ github.workspace }}/screenshots
+        run: |
+          rm -f "$SCREENSHOTS_DIR"/*.png
+          task screenshots
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
           name: screenshots
-          path: ${{ runner.temp }}/captured-screenshots/*.png
+          path: screenshots/*.png
           if-no-files-found: ignore
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: failure()
@@ -67,15 +69,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin "$GITHUB_REF_NAME"
-          if ! git diff --quiet "$GITHUB_SHA" FETCH_HEAD -- template copier.yml Taskfile.yml .github/workflows/screenshots.yml .github/actions/setup-cached-project; then
-            echo "Template changed since capture; skip publishing stale screenshots."
-            exit 0
-          fi
-          git checkout -B "$GITHUB_REF_NAME" FETCH_HEAD
-          cp "$RUNNER_TEMP"/captured-screenshots/*.png screenshots/
-          git add screenshots
+          git add screenshots/*.png
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Refresh application screenshots [skip ci]"
           git push origin "HEAD:$GITHUB_REF_NAME"
-

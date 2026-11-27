@@ -8,7 +8,7 @@ tasks:
       - npm install -g corepack
       - corepack enable pnpm
   test:
-    desc: Render all feature combinations and lint generated Python before the CI matrix
+    desc: Render and lint seven pairwise configurations before runtime validation
     cmds:
       - uv run --no-project --with copier==9.14.1 --with pytest --with ruff pytest -q tests
   render:
@@ -26,7 +26,7 @@ tasks:
     cmds:
       - task: render
         vars:
-          CLI_ARGS: "--defaults -d 'project_name=Example Workspace' -d enable_events=true -d enable_schema_forms=true -d enable_rss=true . generated"
+          CLI_ARGS: "--defaults -d 'project_name=Example Workspace' -d enable_schema_forms=true -d enable_rss=true . generated"
   release:locks:
     desc: Generate release lockfile templates from the committed source
     cmds:

@@ -1,7 +1,7 @@
 import json
 import subprocess
 import tomllib
-from itertools import product
+from itertools import combinations, product
 from pathlib import Path
 
 import pytest
@@ -10,7 +10,27 @@ from copier import run_copy
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize("jobs,terminal,events,mcp,schema_forms,rss,ntfy", list(product([False, True], repeat=7)))
+FLAGS = ("jobs", "terminal", "events", "mcp", "schema_forms", "rss", "ntfy")
+MATRIX = json.loads((ROOT / "tests/feature-matrix.json").read_text())["include"]
+
+
+def test_pairwise_coverage():
+    from yaml import safe_load
+
+    config = safe_load((ROOT / "copier.yml").read_text())
+    assert {f"enable_{flag}" for flag in FLAGS} == {
+        name for name, value in config.items()
+        if isinstance(value, dict) and value.get("type") == "bool"
+    }
+    assert any(all(not row[flag] for flag in FLAGS) for row in MATRIX)
+    assert any(all(row[flag] for flag in FLAGS) for row in MATRIX)
+    for left, right in combinations(FLAGS, 2):
+        assert {(row[left], row[right]) for row in MATRIX} == set(product((False, True), repeat=2))
+
+
+@pytest.mark.parametrize(",".join(FLAGS), [
+    pytest.param(*(row[flag] for flag in FLAGS), id=row["name"]) for row in MATRIX
+])
 def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy):
     run_copy(str(ROOT), str(tmp_path), defaults=True, vcs_ref="HEAD", data={
         "project_name": "Example App", "enable_jobs": jobs, "enable_terminal": terminal, "enable_events": events, "enable_mcp": mcp, "enable_schema_forms": schema_forms, "enable_rss": rss, "enable_ntfy": ntfy,

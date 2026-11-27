@@ -1,0 +1,74 @@
+{
+  "include": [
+    {
+      "name": "minimal",
+      "jobs": false,
+      "terminal": false,
+      "events": false,
+      "mcp": false,
+      "schema_forms": false,
+      "rss": false,
+      "ntfy": false
+    },
+    {
+      "name": "pairwise-1",
+      "jobs": true,
+      "terminal": true,
+      "events": true,
+      "mcp": false,
+      "schema_forms": false,
+      "rss": false,
+      "ntfy": false
+    },
+    {
+      "name": "pairwise-2",
+      "jobs": true,
+      "terminal": false,
+      "events": false,
+      "mcp": true,
+      "schema_forms": true,
+      "rss": false,
+      "ntfy": false
+    },
+    {
+      "name": "pairwise-3",
+      "jobs": false,
+      "terminal": true,
+      "events": false,
+      "mcp": true,
+      "schema_forms": false,
+      "rss": true,
+      "ntfy": false
+    },
+    {
+      "name": "pairwise-4",
+      "jobs": false,
+      "terminal": false,
+      "events": true,
+      "mcp": false,
+      "schema_forms": false,
+      "rss": true,
+      "ntfy": true
+    },
+    {
+      "name": "pairwise-5",
+      "jobs": false,
+      "terminal": false,
+      "events": false,
+      "mcp": false,
+      "schema_forms": true,
+      "rss": false,
+      "ntfy": true
+    },
+    {
+      "name": "full",
+      "jobs": true,
+      "terminal": true,
+      "events": true,
+      "mcp": true,
+      "schema_forms": true,
+      "rss": true,
+      "ntfy": true
+    }
+  ]
+}

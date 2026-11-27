@@ -22,7 +22,7 @@ Optional RSS publishing uses feedgenerator and exposes /feed.rss with automatic 
 
 Go Task is the development command interface, including template rendering, validation, screenshots and benchmarks. Run `task --list-all` in the template or generated project. GitHub Actions delegates development commands to the same Taskfiles.
 
-Run `task doctor` or `task doctor:json` inside generated projects. The template preflight renders and lints every feature combination before the full validation matrix.
+Run `task doctor` or `task doctor:json` inside generated projects. The template preflight renders and lints seven pairwise configurations (including minimal and full); the same seven receive runtime validation. A coverage test verifies every pair of Boolean feature values.
 
 ## Versioned releases and dependency freezing
 
@@ -39,3 +39,5 @@ The example tag is available once the first release is published. The manually d
 For updates, commit local work, then run `uvx --from copier==9.14.1 copier update --vcs-ref=v0.2.0` from the generated project (substitute a published tag). Inspect merge conflicts and lockfile changes, then run `task deps:check`, `task install` and `task check`.
 
 CI caches the uv package cache, the pnpm content-addressed store, and Chromium binaries (keyed by installed Playwright version). Neither project environments nor generated lockfiles are cached. Screenshot scenarios are independent; target a single image with `task screenshots -- --grep 12-navigation-menu` in the generated app.
+
+Showcase screenshots run against the actual frontend with deterministic Playwright API fixtures, not a live backend or database. Ordinary integration tests still exercise SQLite and FastAPI.

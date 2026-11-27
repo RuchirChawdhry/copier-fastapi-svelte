@@ -13,7 +13,7 @@
 - Reuse NoteForm, NotesTable and PaneForge rather than inventing form, table or resize behavior. Use TanStack Form with Zod for client validation and Pydantic for authoritative server validation.
 - Use standalone Svelte 5 + Vite; do not add a second application backend.
 - Diagnostics use psutil. Keep optional SSE and Taskiq dependencies/files conditional in Copier.
-- Run task screenshots to verify visuals using a dedicated test database.
+- Run task screenshots to capture showcase visuals using browser-level fixture responses, not a database.
 
 - After changing Python models or routes, run task api:generate. Use the generated components and paths through openapi-fetch; never duplicate API contracts or edit generated declarations.
 - Run task fix and task check before committing. ESLint handles Svelte/TypeScript; Prettier owns formatting. Do not disable lint rules to pass CI.
@@ -34,4 +34,4 @@
 
 - Use locked installs; do not regenerate lockfiles to fix unrelated failures. Run task deps:check, and use task deps:lock only for deliberate dependency changes. Commit both uv.lock and frontend/pnpm-lock.yaml.
 
-- Use exact Playwright role/name, text and placeholder selectors; scope repeated elements to their owning component instead of using first()/nth() to conceal ambiguity. Regex selectors are reserved for genuinely dynamic text. Keep screenshots independently runnable with one named test per image and an isolated screenshot database. Use task screenshots -- --grep <scenario> for targeted captures.
+- Use exact Playwright role/name, text and placeholder selectors; scope repeated elements to their owning component instead of using first()/nth() to conceal ambiguity. Regex selectors are reserved for genuinely dynamic text. Keep screenshots independently runnable with one named test per image and browser-level showcase fixtures. Use task screenshots -- --grep <scenario> for targeted captures.

@@ -11,10 +11,12 @@ from pydantic import BaseModel, Field
 {% if enable_jobs %}
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
-from taskiq.exceptions import SendTaskError
 {% endif %}
 {% if enable_events %}
 from sse_starlette.sse import EventSourceResponse
+{% endif %}
+{% if enable_jobs %}
+from taskiq.exceptions import SendTaskError
 {% endif %}
 
 from .config import get_settings

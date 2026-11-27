@@ -104,6 +104,10 @@ test('resource navigation, pagination and UTC date filtering', async ({ page, re
     await page.goto('/');
     await page.getByRole('button', { name: 'Resources', exact: true }).click();
     await expect(page.getByRole('link', { name: /OpenAPI schema/ })).toHaveAttribute('href', '/openapi.json');
+    const contract = await request.get('/openapi.json');
+    expect(contract.ok()).toBeTruthy();
+    expect((await contract.json()).paths['/api/notes']).toBeDefined();
+    expect(await (await request.get('/docs')).text()).toContain('Swagger UI');
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Page 2', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Pagination fixture 8', exact: true })).toBeVisible();

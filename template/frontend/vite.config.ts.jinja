@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 const proxy = {
   '/api': 'http://127.0.0.1:8000',
+  '/docs': 'http://127.0.0.1:8000',
+  '/openapi.json': 'http://127.0.0.1:8000',
+  '/redoc': 'http://127.0.0.1:8000',
 {% if enable_rss %}
   '/feed.rss': 'http://127.0.0.1:8000',
 {% endif %}

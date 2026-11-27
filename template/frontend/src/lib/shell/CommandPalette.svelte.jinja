@@ -1,0 +1,63 @@
+<script lang="ts">
+  import Bell from '@lucide/svelte/icons/bell';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+{% if enable_rss %}
+  import Rss from '@lucide/svelte/icons/rss';
+  import Copy from '@lucide/svelte/icons/copy';
+{% endif %}
+  import * as Command from '$lib/components/ui/command/index.js';
+  import { themes, type Theme } from '$lib/theme';
+  import { themeIcons } from '$lib/settings/theme-icons';
+  import { notify } from '$lib/notifications';
+  import { pages, type Page } from './navigation';
+
+  let { open = $bindable(false), onNavigate, onRefresh, setTheme{% if enable_rss %}, onCopyFeed{% endif %} }: {
+    open?: boolean;
+    onNavigate: (page: Page) => void;
+    onRefresh: () => Promise<void>;
+    setTheme: (theme: Theme) => void;
+{% if enable_rss %}
+    onCopyFeed: () => Promise<void>;
+{% endif %}
+  } = $props();
+
+  function action(run: () => void) {
+    open = false;
+    run();
+  }
+
+  function keyboard(event: KeyboardEvent) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      open = !open;
+    }
+  }
+</script>
+
+<svelte:window onkeydown={keyboard} />
+<Command.Dialog bind:open>
+  <Command.Input placeholder="Type a command…" />
+  <Command.List>
+    <Command.Empty>No commands found.</Command.Empty>
+    <Command.Group heading="Navigation">
+      {#each pages as item (item.id)}
+        <Command.Item value={item.command.toLowerCase()} onSelect={() => action(() => onNavigate(item.id))}><item.icon aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> {item.command}</Command.Item>
+      {/each}
+      <Command.Item value="refresh data" onSelect={() => action(onRefresh)}><RefreshCw aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Refresh data</Command.Item>
+      <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}><Bell aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Test notification</Command.Item>
+    </Command.Group>
+{% if enable_rss %}
+    <Command.Group heading="Syndication">
+      <Command.Item value="open rss feed" onSelect={() => action(() => { window.open('/feed.rss', '_blank', 'noopener,noreferrer'); })}><Rss aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open RSS feed</Command.Item>
+      <Command.Item value="copy rss feed url" onSelect={() => action(onCopyFeed)}><Copy aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Copy RSS feed URL</Command.Item>
+    </Command.Group>
+{% endif %}
+    <Command.Group heading="Appearance">
+      {#each themes as option (option.id)}
+        {@const Icon = themeIcons[option.id]}
+        <Command.Item value={'theme ' + option.label} onSelect={() => action(() => setTheme(option.id))}><Icon aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Theme: {option.label}</Command.Item>
+      {/each}
+    </Command.Group>
+  </Command.List>
+</Command.Dialog>
+

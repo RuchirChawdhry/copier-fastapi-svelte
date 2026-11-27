@@ -1,89 +1,33 @@
 <script lang="ts">
-{% if enable_events %}
-  import { onMount } from 'svelte';
-{% endif %}
-  import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-  import { notesOptions, healthOptions } from '$lib/queries';
-  import { Toaster, toast } from 'svelte-sonner';
-{% if enable_rss %}
-  import Rss from '@lucide/svelte/icons/rss';
-  import Copy from '@lucide/svelte/icons/copy';
-{% endif %}
-  import Bell from '@lucide/svelte/icons/bell';
-  import Sun from '@lucide/svelte/icons/sun';
-  import Moon from '@lucide/svelte/icons/moon';
-  import Monitor from '@lucide/svelte/icons/monitor';
-  import Sunset from '@lucide/svelte/icons/sunset';
-  import MoonStar from '@lucide/svelte/icons/moon-star';
-  import Accessibility from '@lucide/svelte/icons/accessibility';
-  import MessageSquare from '@lucide/svelte/icons/message-square';
-  import { Switch } from '$lib/components/ui/switch/index.js';
-  import { Separator } from '$lib/components/ui/separator/index.js';
+  import { Toaster{% if enable_rss %}, toast{% endif %} } from 'svelte-sonner';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-  import * as Item from '$lib/components/ui/item/index.js';
-  import * as Marker from '$lib/components/ui/marker/index.js';
-  import * as Select from '$lib/components/ui/select/index.js';
-  import WorkspaceSidebar from '$lib/WorkspaceSidebar.svelte';
-  import WorkspaceHeader from '$lib/WorkspaceHeader.svelte';
-  import { preferences, setPreference } from '$lib/preferences.svelte';
-  import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
-  import Settings from '@lucide/svelte/icons/settings';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-  import Database from '@lucide/svelte/icons/database';
-  import Activity from '@lucide/svelte/icons/activity';
-  import FileText from '@lucide/svelte/icons/file-text';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import * as Command from '$lib/components/ui/command/index.js';
-  import { PaneGroup, Pane, PaneResizer } from 'paneforge';
-  import NoteForm from '$lib/NoteForm.svelte';
-{% if enable_schema_forms %}
-  import SchemaNoteForm from '$lib/SchemaNoteForm.svelte';
-{% endif %}
-  import NotesTable from '$lib/NotesTable.svelte';
-  import Diagnostics from '$lib/Diagnostics.svelte';
-  import { api } from '$lib/api';
-  import { themes, applyTheme, currentTheme, type Theme } from '$lib/theme';
-  import { notify, requestNotifications } from '$lib/notifications';
-{% if enable_terminal %}
-  import Terminal from '$lib/Terminal.svelte';
+  import WorkspaceSidebar from '$lib/shell/WorkspaceSidebar.svelte';
+  import WorkspaceHeader from '$lib/shell/WorkspaceHeader.svelte';
+  import CommandPalette from '$lib/shell/CommandPalette.svelte';
+  import type { Page } from '$lib/shell/navigation';
+  import { createWorkspace } from '$lib/features/notes/workspace.svelte';
+  import Overview from './pages/Overview.svelte';
+  import Settings from './pages/Settings.svelte';
+  import Diagnostics from './pages/Diagnostics.svelte';
+  import { applyTheme, currentTheme, type Theme } from '$lib/theme';
+{% if enable_rss %}
+  import { notify } from '$lib/notifications';
 {% endif %}
 
-  const themeIcons = { dark: Moon, light: Sun, oled: Monitor, 'solarized-light': Sunset, 'solarized-dark': MoonStar };
   let theme = $state<Theme>(currentTheme());
   let palette = $state(false);
   let sidebarOpen = $state(!document.cookie.split('; ').includes('sidebar_state=false'));
-  let page = $state<'workspace' | 'settings' | 'diagnostics'>('workspace');
-  const queryClient = useQueryClient();
-  const notesQuery = createQuery(() => notesOptions);
-  const healthQuery = createQuery(() => healthOptions);
-  const notes = $derived(notesQuery.data ?? []);
-  const health = $derived(healthQuery.data);
-  const addMutation = createMutation(() => ({
-    mutationFn: api.add,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
-      notify('Note saved');
-    },
-  }));
-  const removeMutation = createMutation(() => ({
-    mutationFn: api.remove,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
-      notify('Note deleted');
-    },
-  }));
-  let selectedId = $state<number | null>(null);
-  let selected = $derived(notes.find(note => note.id === selectedId));
-  let dark = $derived(!['light', 'solarized-light'].includes(theme));
+  let page = $state<Page>('workspace');
+  const workspace = createWorkspace();
+  const dark = $derived(!['light', 'solarized-light'].includes(theme));
+
+  function navigate(destination: Page) {
+    page = destination;
+  }
 
   function setTheme(value: Theme) {
     theme = value;
     applyTheme(value);
-  }
-
-  function action(run: () => void) {
-    palette = false;
-    run();
   }
 
 {% if enable_rss %}
@@ -97,177 +41,23 @@
   }
 
 {% endif %}
-  function keyboard(event: KeyboardEvent) {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-      event.preventDefault();
-      palette = !palette;
-    }
-  }
-
-  async function refresh() {
-    await Promise.all([notesQuery.refetch(), healthQuery.refetch()]);
-  }
-
-  async function add(text: string) {
-    await addMutation.mutateAsync(text);
-  }
-
-  async function remove(id: number) {
-    try {
-      await removeMutation.mutateAsync(id);
-    } catch (error) {
-      toast.error(String(error));
-    }
-  }
-
-{% if enable_events %}
-  onMount(() => {
-    const stream = new EventSource('/api/events');
-    let previous: string | undefined;
-    stream.addEventListener('notes-changed', (event: MessageEvent<string>) => {
-      void queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
-      if (previous !== undefined && previous !== event.data) notify('Notes updated', true);
-      previous = event.data;
-    });
-    return () => stream.close();
-  });
-{% endif %}
 </script>
 
-<svelte:window onkeydown={keyboard} />
 <Toaster theme={dark ? 'dark' : 'light'} position="bottom-right" richColors />
 <Sidebar.Provider bind:open={sidebarOpen} style="--sidebar-width: 14rem; --sidebar-width-icon: 3.25rem;">
-  <WorkspaceSidebar projectName={{ project_name | tojson }} {page} onNavigate={(destination) => page = destination} />
+  <WorkspaceSidebar projectName={{ project_name | tojson }} {page} onNavigate={navigate} />
   <Sidebar.Inset class="min-w-0 text-foreground">
-    <WorkspaceHeader {page} onNavigate={(destination) => page = destination} onSearch={() => palette = true} onRefresh={refresh}{% if enable_rss %} onCopyFeed={copyFeed}{% endif %} />
+    <WorkspaceHeader {page} onNavigate={navigate} onSearch={() => palette = true} onRefresh={workspace.refresh}{% if enable_rss %} onCopyFeed={copyFeed}{% endif %} />
     <div class="mx-auto w-full max-w-screen-2xl space-y-6 p-5 md:p-9">
       {#if page === 'workspace'}
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div><p class="text-xs font-medium uppercase tracking-widest text-muted-foreground">Application</p><h1 class="mt-1 text-3xl font-semibold tracking-tight">Overview</h1></div>
-          <Button variant="outline" onclick={refresh} disabled={notesQuery.isFetching || healthQuery.isFetching}><RefreshCw class="size-4" /> Refresh</Button>
-        </div>
-        <div class="grid gap-3 sm:grid-cols-3">
-          <div class="rounded-lg border bg-card p-5"><p class="flex items-center gap-2 text-sm text-muted-foreground"><Activity class="size-4" /> API readiness</p><p class="mt-2 text-xl font-semibold">{health?.status ?? 'Unknown'}</p></div>
-          <div class="rounded-lg border bg-card p-5"><p class="flex items-center gap-2 text-sm text-muted-foreground"><Database class="size-4" /> Database</p><p class="mt-2 text-xl font-semibold">{health?.dependencies.sqlite ?? 'Unknown'}</p></div>
-          <div class="rounded-lg border bg-card p-5"><p class="flex items-center gap-2 text-sm text-muted-foreground"><FileText class="size-4" /> Saved notes</p><p class="mt-2 text-xl font-semibold">{notes.length}</p></div>
-        </div>
-        <section class="rounded-lg border bg-card p-5">
-          <h2 class="text-lg font-semibold">Notes</h2>
-          <p class="mb-5 text-sm text-muted-foreground">A working example of API, persistence and context menus.</p>
-          <NoteForm onSave={add} />
-          {#if notesQuery.isError}
-            <p role="alert" class="mb-3 text-sm text-destructive">{notesQuery.error.message}</p>
-          {:else if notesQuery.isPending}
-            <p role="status" class="mb-3 text-sm text-muted-foreground">Loading notes…</p>
-          {/if}
-          <PaneGroup direction="horizontal" autoSaveId="notes-layout">
-            <Pane defaultSize={70} minSize={40}>
-              <div class="pr-3"><NotesTable {notes} onRemove={remove} onSelect={(note) => selectedId = note.id} /></div>
-            </Pane>
-            <PaneResizer class="w-2 rounded bg-border hover:bg-ring focus-visible:bg-ring" />
-            <Pane defaultSize={30} minSize={20}>
-              <div class="pl-4">
-                <Marker.Root variant="separator" class="mb-4">
-                  <Marker.Content>Note details</Marker.Content>
-                </Marker.Root>
-                {#if selected}
-                  <p class="mb-2 font-mono text-xs text-muted-foreground">ID {selected.id}</p>
-                  <p class="break-all text-sm">{selected.text}</p>
-                  <p class="mt-3 text-xs text-muted-foreground">Created: {selected.created_at ? selected.created_at.slice(0, 10) + ' UTC' : 'Unknown'}</p>
-                {:else}
-                  <p class="text-sm text-muted-foreground">Select a note to inspect it.</p>
-                {/if}
-              </div>
-            </Pane>
-          </PaneGroup>
-        </section>
-{% if enable_schema_forms %}
-        <SchemaNoteForm onSave={add} />
-{% endif %}
-{% if enable_terminal %}
-        <Terminal />
-{% endif %}
+        <Overview {workspace} />
       {:else if page === 'diagnostics'}
         <Diagnostics />
       {:else}
-        <h1 class="text-3xl font-semibold tracking-tight">Settings</h1>
-        <section class="rounded-lg border bg-card p-5">
-          <h2 class="text-lg font-semibold">Appearance</h2>
-          <p class="mb-4 text-sm text-muted-foreground">Theme preference is saved on this browser.</p>
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <label for="theme-select" class="font-medium">Color theme</label>
-              <p class="mt-1 text-sm text-muted-foreground">Choose one of five application themes.</p>
-            </div>
-            <Select.Root type="single" value={theme} onValueChange={(value) => setTheme(value as Theme)}>
-              <Select.Trigger id="theme-select" aria-label="Color theme" class="min-w-48">{themes.find(option => option.id === theme)?.label}</Select.Trigger>
-              <Select.Content>
-                {#each themes as option (option.id)}
-                  {@const Icon = themeIcons[option.id]}
-                  <Select.Item value={option.id} label={option.label}><Icon class="size-4" aria-hidden="true" /> {option.label}</Select.Item>
-                {/each}
-              </Select.Content>
-            </Select.Root>
-          </div>
-        </section>
-        <section class="rounded-lg border bg-card p-5">
-          <h2 class="flex items-center gap-2 text-lg font-semibold"><Bell class="size-5" aria-hidden="true" /> Notifications</h2>
-          <p class="mb-4 text-sm text-muted-foreground">Control which notifications this browser displays.</p>
-          <Item.Root class="px-0">
-            <Item.Content>
-              <label for="success-toasts" class="flex items-center gap-2 font-medium"><MessageSquare class="size-4" aria-hidden="true" /> Success notifications</label>
-              <Item.Description id="success-description">Show a toast when an operation succeeds. Errors always remain visible.</Item.Description>
-            </Item.Content>
-            <Item.Actions><Switch id="success-toasts" aria-describedby="success-description" checked={preferences.successToasts} onCheckedChange={(value) => setPreference('successToasts', value)} /></Item.Actions>
-          </Item.Root>
-          <Separator />
-          <Item.Root class="px-0">
-            <Item.Content>
-              <label for="desktop-notifications" class="flex items-center gap-2 font-medium"><Monitor class="size-4" aria-hidden="true" /> Desktop notifications</label>
-              <Item.Description id="desktop-description">Allow browser notifications while the application is open, subject to browser permission.</Item.Description>
-            </Item.Content>
-            <Item.Actions><Switch id="desktop-notifications" aria-describedby="desktop-description" checked={preferences.desktopNotifications} onCheckedChange={(value) => value ? void requestNotifications() : setPreference('desktopNotifications', false)} /></Item.Actions>
-          </Item.Root>
-          <Button variant="outline" onclick={() => { toast.success('Notification test'); if (preferences.desktopNotifications && 'Notification' in window && Notification.permission === 'granted') new Notification('Notification test'); }}><Bell class="size-4" aria-hidden="true" /> Test notification</Button>
-        </section>
-        <section class="rounded-lg border bg-card p-5">
-          <h2 class="flex items-center gap-2 text-lg font-semibold"><Accessibility class="size-5" aria-hidden="true" /> Accessibility</h2>
-          <Item.Root class="px-0">
-            <Item.Content>
-              <label for="reduced-motion" class="font-medium">Reduce motion</label>
-              <Item.Description id="motion-description">Minimize transitions, animations and smooth scrolling.</Item.Description>
-            </Item.Content>
-            <Item.Actions><Switch id="reduced-motion" aria-describedby="motion-description" checked={preferences.reducedMotion} onCheckedChange={(value) => setPreference('reducedMotion', value)} /></Item.Actions>
-          </Item.Root>
-        </section>
+        <Settings {theme} {setTheme} />
       {/if}
     </div>
   </Sidebar.Inset>
 </Sidebar.Provider>
 
-<Command.Dialog bind:open={palette}>
-  <Command.Input placeholder="Type a command…" />
-  <Command.List>
-    <Command.Empty>No commands found.</Command.Empty>
-    <Command.Group heading="Navigation">
-      <Command.Item value="open overview" onSelect={() => action(() => page = 'workspace')}><LayoutDashboard aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open overview</Command.Item>
-      <Command.Item value="open settings" onSelect={() => action(() => page = 'settings')}><Settings aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open settings</Command.Item>
-      <Command.Item value="open diagnostics" onSelect={() => action(() => page = 'diagnostics')}><Activity aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open diagnostics</Command.Item>
-      <Command.Item value="refresh data" onSelect={() => action(refresh)}><RefreshCw aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Refresh data</Command.Item>
-      <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}><Bell aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Test notification</Command.Item>
-    </Command.Group>
-{% if enable_rss %}
-    <Command.Group heading="Syndication">
-      <Command.Item value="open rss feed" onSelect={() => action(() => { window.open('/feed.rss', '_blank', 'noopener,noreferrer'); })}><Rss aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Open RSS feed</Command.Item>
-      <Command.Item value="copy rss feed url" onSelect={() => action(copyFeed)}><Copy aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Copy RSS feed URL</Command.Item>
-    </Command.Group>
-{% endif %}
-    <Command.Group heading="Appearance">
-      {#each themes as option (option.id)}
-        {@const Icon = themeIcons[option.id]}
-        <Command.Item value={'theme ' + option.label} onSelect={() => action(() => setTheme(option.id))}><Icon aria-hidden="true" data-menu-icon="" class="size-4 shrink-0" /> Theme: {option.label}</Command.Item>
-      {/each}
-    </Command.Group>
-  </Command.List>
-</Command.Dialog>
-
+<CommandPalette bind:open={palette} onNavigate={navigate} onRefresh={workspace.refresh} {setTheme}{% if enable_rss %} onCopyFeed={copyFeed}{% endif %} />

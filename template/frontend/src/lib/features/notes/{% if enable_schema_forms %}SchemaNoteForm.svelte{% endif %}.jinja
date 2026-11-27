@@ -7,7 +7,7 @@
   import { createFormValidator } from '@sjsf/ajv8-validator';
   import { theme } from '@sjsf/basic-theme';
   import '@sjsf/basic-theme/css/basic.css';
-  import openapi from '../../openapi.json';
+  import openapi from '../../../../openapi.json';
   import { toast } from 'svelte-sonner';
 
   let { onSave }: { onSave: (text: string) => Promise<void> } = $props();

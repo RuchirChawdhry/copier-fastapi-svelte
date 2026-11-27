@@ -98,3 +98,12 @@ task ntfy:send -- "Build complete" --title "Development"
 
 Use app.ntfy.notify(message, title) from synchronous services or a worker; from async code call it using asyncio.to_thread. No notes or diagnostics are sent automatically. HTTP failures propagate, and the request times out after 10 seconds. This is independent of browser notifications and can reach subscribed devices while the SPA is closed.
 {% endif %}
+
+## Frontend structure
+
+- `src/App.svelte`: application composition and shared navigation/theme state.
+- `src/pages/`: Overview, Settings and Diagnostics.
+- `src/lib/shell/`: WorkspaceHeader, WorkspaceSidebar, PageNavigation, ResourceNavigation and CommandPalette; page metadata lives in navigation.ts.
+- `src/lib/settings/`: appearance, notifications and accessibility sections.
+- `src/lib/features/notes/`: forms, table, date filtering, note details and the shared workspace query controller; optional schema form is generated only when selected.
+- `src/lib/components/ui/`: reusable shadcn-svelte primitives.

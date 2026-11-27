@@ -1,0 +1,76 @@
+{% if enable_events %}
+import { onMount } from 'svelte';
+{% endif %}
+import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
+import { toast } from 'svelte-sonner';
+import { notesOptions, healthOptions } from '$lib/queries';
+import { api, type Note } from '$lib/api';
+import { notify } from '$lib/notifications';
+
+export function createWorkspace() {
+  const queryClient = useQueryClient();
+  const notesQuery = createQuery(() => notesOptions);
+  const healthQuery = createQuery(() => healthOptions);
+  const notes = $derived(notesQuery.data ?? []);
+  const health = $derived(healthQuery.data);
+  const addMutation = createMutation(() => ({
+    mutationFn: api.add,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
+      notify('Note saved');
+    },
+  }));
+  const removeMutation = createMutation(() => ({
+    mutationFn: api.remove,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
+      notify('Note deleted');
+    },
+  }));
+  let selectedId = $state<number | null>(null);
+  let selected = $derived(notes.find(note => note.id === selectedId));
+
+  async function refresh() {
+    await Promise.all([notesQuery.refetch(), healthQuery.refetch()]);
+  }
+
+  async function add(text: string) {
+    await addMutation.mutateAsync(text);
+  }
+
+  async function remove(id: number) {
+    try {
+      await removeMutation.mutateAsync(id);
+    } catch (error) {
+      toast.error(String(error));
+    }
+  }
+
+{% if enable_events %}
+  onMount(() => {
+    const stream = new EventSource('/api/events');
+    let previous: string | undefined;
+    stream.addEventListener('notes-changed', (event: MessageEvent<string>) => {
+      void queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
+      if (previous !== undefined && previous !== event.data) notify('Notes updated', true);
+      previous = event.data;
+    });
+    return () => stream.close();
+  });
+{% endif %}
+
+  return {
+    get notes() { return notes; },
+    get health() { return health; },
+    get selected() { return selected; },
+    get error() { return notesQuery.isError ? notesQuery.error : null; },
+    get pending() { return notesQuery.isPending; },
+    get fetching() { return notesQuery.isFetching || healthQuery.isFetching; },
+    select(note: Note) { selectedId = note.id; },
+    refresh,
+    add,
+    remove,
+  };
+}
+
+export type Workspace = ReturnType<typeof createWorkspace>;

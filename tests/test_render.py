@@ -18,7 +18,7 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert (tmp_path / ".copier-answers.yml").is_file()
     assert (tmp_path / "app/jobs.py").exists() == jobs
     assert (tmp_path / "compose.yml").exists() == jobs
-    assert (tmp_path / "frontend/src/lib/Terminal.svelte").exists() == terminal
+    assert (tmp_path / "frontend/src/lib/features/terminal/Terminal.svelte").exists() == terminal
     dependencies = (tmp_path / "pyproject.toml").read_text()
     for name in ("taskiq", "taskiq-redis", "taskiq-fastapi"):
         assert (f'"{name}"' in dependencies) == jobs
@@ -31,10 +31,22 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert ("/mcp" in (tmp_path / "frontend/vite.config.ts").read_text()) == mcp
     assert ("ttyd" in (tmp_path / "Taskfile.yml").read_text()) == terminal
     assert ("basic_auth" in (tmp_path / "Caddyfile").read_text()) == terminal
-    assert (tmp_path / "frontend/src/App.svelte").exists()
+    source = tmp_path / "frontend/src"
+    for name in (
+        "App.svelte", "pages/Overview.svelte", "pages/Settings.svelte", "pages/Diagnostics.svelte",
+        "lib/shell/WorkspaceHeader.svelte", "lib/shell/WorkspaceSidebar.svelte",
+        "lib/shell/CommandPalette.svelte", "lib/shell/PageNavigation.svelte",
+        "lib/shell/ResourceNavigation.svelte", "lib/settings/AppearanceSettings.svelte",
+        "lib/settings/NotificationSettings.svelte", "lib/settings/AccessibilitySettings.svelte",
+        "lib/features/notes/NoteForm.svelte", "lib/features/notes/NotesTable.svelte",
+        "lib/features/notes/NoteDetails.svelte", "lib/features/notes/workspace.svelte.ts",
+    ):
+        assert (source / name).is_file(), name
+    for name in ("WorkspaceHeader", "WorkspaceSidebar", "NoteForm", "NotesTable", "Diagnostics"):
+        assert not (source / f"lib/{name}.svelte").exists()
     frontend = (tmp_path / "frontend/package.json").read_text()
     assert ("@sjsf/form" in frontend) == schema_forms
-    assert (tmp_path / "frontend/src/lib/SchemaNoteForm.svelte").exists() == schema_forms
+    assert (tmp_path / "frontend/src/lib/features/notes/SchemaNoteForm.svelte").exists() == schema_forms
     assert "@tanstack/svelte-form" in frontend
     assert "@sveltejs/kit" not in frontend
     assert "formsnap" not in frontend

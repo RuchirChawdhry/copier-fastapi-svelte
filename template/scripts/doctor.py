@@ -77,7 +77,7 @@ def inspect_environment() -> list[dict[str, str]]:
     if (ROOT / "app/jobs.py").exists():
         docker = command(["docker", "compose", "version"])
         add("docker_compose", "ok" if docker else "warning", docker or "Unavailable", "Install Docker Compose or configure an existing Redis server." if not docker else "")
-    for enabled, tool in [(True, "caddy"), ((ROOT / "frontend/src/lib/Terminal.svelte").exists(), "ttyd")]:
+    for enabled, tool in [(True, "caddy"), ((ROOT / "frontend/src/lib/features/terminal/Terminal.svelte").exists(), "ttyd")]:
         if enabled:
             available = shutil.which(tool)
             add(tool, "ok" if available else "warning", "Available" if available else "Unavailable", f"Install {tool} if using the corresponding service." if not available else "")

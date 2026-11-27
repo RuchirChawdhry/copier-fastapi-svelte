@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Separator } from '$lib/components/ui/separator/index.js';
   import { Kbd, KbdGroup } from '$lib/components/ui/kbd/index.js';
-  import ResourceNavigation from '$lib/ResourceNavigation.svelte';
+  import ResourceNavigation from './ResourceNavigation.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import * as Dropdown from '$lib/components/ui/dropdown-menu/index.js';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
@@ -17,7 +17,7 @@
   import Rss from '@lucide/svelte/icons/rss';
 {% endif %}
 
-  type Page = 'workspace' | 'settings' | 'diagnostics';
+  import { pageLabels, type Page } from './navigation';
   let { page, onNavigate, onSearch, onRefresh{% if enable_rss %}, onCopyFeed{% endif %} }: {
     page: Page;
     onNavigate: (page: Page) => void;
@@ -40,7 +40,7 @@
     <Tooltip.Content><span>Toggle sidebar</span> <KbdGroup><Kbd>{modifier}</Kbd><Kbd>B</Kbd></KbdGroup></Tooltip.Content>
   </Tooltip.Root>
   <Separator orientation="vertical" class="!h-5" />
-  <span class="truncate text-sm font-medium">{page === 'workspace' ? 'Overview' : page === 'settings' ? 'Settings' : 'Diagnostics'}</span>
+  <span class="truncate text-sm font-medium">{pageLabels[page]}</span>
   <div class="flex-1"></div>
   <ResourceNavigation />
   <Button variant="outline" onclick={onSearch} aria-label="Search commands"><Search class="size-4" /><span class="hidden sm:inline">Search commands</span><KbdGroup class="ml-2 hidden sm:inline-flex"><Kbd>{modifier}</Kbd><Kbd>K</Kbd></KbdGroup></Button>

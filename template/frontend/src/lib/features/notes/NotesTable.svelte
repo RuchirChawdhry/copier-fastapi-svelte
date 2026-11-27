@@ -5,7 +5,7 @@
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import * as Pagination from '$lib/components/ui/pagination/index.js';
   import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
-  import DateRangeFilter from '$lib/DateRangeFilter.svelte';
+  import DateRangeFilter from './DateRangeFilter.svelte';
   import type { DateRange } from 'bits-ui';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';

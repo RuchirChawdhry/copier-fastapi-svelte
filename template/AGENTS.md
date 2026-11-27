@@ -29,3 +29,5 @@
 - Reuse Navigation Menu, Pagination, Popover, Range Calendar and Scroll Area. Keep paging connected to TanStack Table; use real UTC creation dates for note filtering, preserving unknown dates in migrated records.
 
 - Use typed operation-specific ApiError messages; do not expose server exception details to users. SSE sends revisions only; invalidate the notes query on reconnect and change. If ntfy is enabled, send only deliberate messages to the configured topic; never publish private records automatically.
+
+- Keep App.svelte as composition only. Pages belong in frontend/src/pages; shell navigation, header and command palette in lib/shell; settings sections in lib/settings; domain UI and query coordination in lib/features. Add page metadata in lib/shell/navigation.ts and reuse PageNavigation and CommandPalette. Preserve conditional Copier features when moving files.

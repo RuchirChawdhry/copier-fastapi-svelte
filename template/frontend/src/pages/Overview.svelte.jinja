@@ -1,0 +1,55 @@
+<script lang="ts">
+  import Activity from '@lucide/svelte/icons/activity';
+  import Database from '@lucide/svelte/icons/database';
+  import FileText from '@lucide/svelte/icons/file-text';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import { PaneGroup, Pane, PaneResizer } from 'paneforge';
+  import NoteForm from '$lib/features/notes/NoteForm.svelte';
+  import NotesTable from '$lib/features/notes/NotesTable.svelte';
+  import NoteDetails from '$lib/features/notes/NoteDetails.svelte';
+  import type { Workspace } from '$lib/features/notes/workspace.svelte';
+{% if enable_schema_forms %}
+  import SchemaNoteForm from '$lib/features/notes/SchemaNoteForm.svelte';
+{% endif %}
+{% if enable_terminal %}
+  import Terminal from '$lib/features/terminal/Terminal.svelte';
+{% endif %}
+
+  let { workspace }: { workspace: Workspace } = $props();
+</script>
+
+<div class="flex flex-wrap items-center justify-between gap-4">
+  <div><p class="text-xs font-medium uppercase tracking-widest text-muted-foreground">Application</p><h1 class="mt-1 text-3xl font-semibold tracking-tight">Overview</h1></div>
+  <Button variant="outline" onclick={workspace.refresh} disabled={workspace.fetching}><RefreshCw class="size-4" /> Refresh</Button>
+</div>
+<div class="grid gap-3 sm:grid-cols-3">
+  <div class="rounded-lg border bg-card p-5"><p class="flex items-center gap-2 text-sm text-muted-foreground"><Activity class="size-4" /> API readiness</p><p class="mt-2 text-xl font-semibold">{workspace.health?.status ?? 'Unknown'}</p></div>
+  <div class="rounded-lg border bg-card p-5"><p class="flex items-center gap-2 text-sm text-muted-foreground"><Database class="size-4" /> Database</p><p class="mt-2 text-xl font-semibold">{workspace.health?.dependencies.sqlite ?? 'Unknown'}</p></div>
+  <div class="rounded-lg border bg-card p-5"><p class="flex items-center gap-2 text-sm text-muted-foreground"><FileText class="size-4" /> Saved notes</p><p class="mt-2 text-xl font-semibold">{workspace.notes.length}</p></div>
+</div>
+<section class="rounded-lg border bg-card p-5">
+  <h2 class="text-lg font-semibold">Notes</h2>
+  <p class="mb-5 text-sm text-muted-foreground">A working example of API, persistence and context menus.</p>
+  <NoteForm onSave={workspace.add} />
+  {#if workspace.error}
+    <p role="alert" class="mb-3 text-sm text-destructive">{workspace.error.message}</p>
+  {:else if workspace.pending}
+    <p role="status" class="mb-3 text-sm text-muted-foreground">Loading notes…</p>
+  {/if}
+  <PaneGroup direction="horizontal" autoSaveId="notes-layout">
+    <Pane defaultSize={70} minSize={40}>
+      <div class="pr-3"><NotesTable notes={workspace.notes} onRemove={workspace.remove} onSelect={workspace.select} /></div>
+    </Pane>
+    <PaneResizer class="w-2 rounded bg-border hover:bg-ring focus-visible:bg-ring" />
+    <Pane defaultSize={30} minSize={20}>
+      <NoteDetails selected={workspace.selected} />
+    </Pane>
+  </PaneGroup>
+</section>
+{% if enable_schema_forms %}
+<SchemaNoteForm onSave={workspace.add} />
+{% endif %}
+{% if enable_terminal %}
+<Terminal />
+{% endif %}

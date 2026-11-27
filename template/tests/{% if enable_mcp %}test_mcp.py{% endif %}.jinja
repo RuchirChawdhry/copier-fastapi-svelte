@@ -1,39 +1,41 @@
-def test_mcp_initialization_and_tool_calls(client):
-    headers = {"Accept": "application/json, text/event-stream", "Host": "127.0.0.1"}
-    response = client.post(
-        "/mcp/", headers=headers,
-        json={
-            "jsonrpc": "2.0", "id": 1, "method": "initialize",
-            "params": {
-                "protocolVersion": "2025-03-26",
-                "capabilities": {},
-                "clientInfo": {"name": "template-test", "version": "1.0"},
-            },
-        },
-    )
-    assert response.status_code == 200
-    initialized = response.json()["result"]
-    assert initialized["serverInfo"]["name"].endswith("-app")
-    headers["MCP-Protocol-Version"] = initialized["protocolVersion"]
-    if session_id := response.headers.get("Mcp-Session-Id"):
-        headers["Mcp-Session-Id"] = session_id
-    response = client.post(
-        "/mcp/", headers=headers,
-        json={"jsonrpc": "2.0", "method": "notifications/initialized"},
-    )
-    assert response.status_code in {200, 202, 204}
-    response = client.post(
-        "/mcp/", headers=headers,
-        json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
-    )
-    assert response.status_code == 200
-    assert {tool["name"] for tool in response.json()["result"]["tools"]} == {"list_notes"}
-    response = client.post(
-        "/mcp/", headers=headers,
-        json={"jsonrpc": "2.0", "id": 3, "method": "tools/call",
-              "params": {"name": "list_notes", "arguments": {}}},
-    )
-    assert response.status_code == 200
-    result = response.json()["result"]
+from mcp.shared.inbound import MCP_METHOD_HEADER, MCP_NAME_HEADER, MCP_PROTOCOL_VERSION_HEADER
+from mcp_types import (
+    CLIENT_CAPABILITIES_META_KEY,
+    CLIENT_INFO_META_KEY,
+    PROTOCOL_VERSION_META_KEY,
+    SERVER_INFO_META_KEY,
+)
+
+
+def test_application_mcp(client):
+    protocol = "2026-07-28"
+    meta = {
+        PROTOCOL_VERSION_META_KEY: protocol,
+        CLIENT_INFO_META_KEY: {"name": "template-test", "version": "1.0"},
+        CLIENT_CAPABILITIES_META_KEY: {},
+    }
+
+    def call(method, request_id, **params):
+        headers = {
+            "Accept": "application/json, text/event-stream",
+            "Host": "127.0.0.1",
+            MCP_PROTOCOL_VERSION_HEADER: protocol,
+            MCP_METHOD_HEADER: method,
+        }
+        if method == "tools/call":
+            headers[MCP_NAME_HEADER] = params["name"]
+        response = client.post(
+            "/mcp/", headers=headers,
+            json={"jsonrpc": "2.0", "id": request_id, "method": method,
+                  "params": {"_meta": meta, **params}},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["result"]
+
+    discovery = call("server/discover", 1)
+    assert protocol in discovery["supportedVersions"]
+    assert discovery["_meta"][SERVER_INFO_META_KEY]["name"].endswith("-app")
+    assert {tool["name"] for tool in call("tools/list", 2)["tools"]} == {"list_notes"}
+    result = call("tools/call", 3, name="list_notes", arguments={})
     assert not result.get("isError", False)
     assert result["content"]

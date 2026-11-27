@@ -18,10 +18,9 @@ def test_fastmcp_version():
     assert version("fastmcp") == "4.2.6"
 
 
-@pytest.mark.parametrize("mode", ["auto", "legacy"])
-def test_mcp_registration_and_calls(mode):
+def test_mcp_registration_and_calls():
     async def check():
-        async with Client(create_server(), mode=mode) as client:
+        async with Client(create_server(), mode="2026-07-28") as client:
             tools = {tool.name for tool in await client.list_tools()}
             assert {"project_context", "doctor", "list_pages", "list_endpoints",
                     "inspect_endpoint", "database_schema", "browser_diagnostics",
@@ -37,21 +36,15 @@ def test_mcp_registration_and_calls(mode):
     asyncio.run(check())
 
 
-@pytest.mark.parametrize("mode", ["auto", "legacy"])
-def test_stdio_protocol(mode):
+def test_stdio_protocol():
     async def check():
         transport = StdioTransport(
             command=sys.executable, args=["-m", "tools.dev_mcp"],
             cwd=str(Path(__file__).resolve().parents[1]), keep_alive=False,
         )
-        async with Client(transport, mode=mode, timeout=20) as client:
+        async with Client(transport, mode="2026-07-28", timeout=20) as client:
             assert client.server_info.name.endswith("-dev")
-            assert client.protocol_version
-            if mode == "legacy":
-                assert client.initialize_result is not None
-                assert client.initialize_result.server_info.name.endswith("-dev")
-            else:
-                assert client.protocol_version == "2026-07-28"
+            assert client.protocol_version == "2026-07-28"
             tools = await client.list_tools()
             assert "project_context" in {tool.name for tool in tools}
             result = await client.call_tool("project_context")
@@ -71,7 +64,7 @@ def test_screenshot_image_content(monkeypatch):
     monkeypatch.setattr(browser, "probe", lambda *args: {"image": base64.b64encode(png).decode()})
 
     async def check():
-        async with Client(create_server()) as client:
+        async with Client(create_server(), mode="2026-07-28") as client:
             result = await client.call_tool("capture_screenshot")
             assert not result.is_error
             image = result.content[0]

@@ -44,4 +44,4 @@ Showcase screenshots run against the actual frontend with deterministic Playwrig
 
 Every generated project includes a local development-only FastMCP server for context, doctor, OpenAPI, browser inspection, accessibility, SQLite schema and verification. Application MCP is independently optional. See the generated docs/development-mcp.md for setup and tools.
 
-Both MCP servers use FastMCP 4.2.6 (MCP SDK v2), with legacy and modern negotiation covered by development MCP tests.
+Both MCP servers use FastMCP 4.2.6 (MCP SDK v2), with current 2026-07-28 protocol coverage for both servers.

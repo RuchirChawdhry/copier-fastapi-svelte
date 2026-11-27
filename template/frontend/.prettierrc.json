@@ -1,1 +1,13 @@
-{"plugins":["prettier-plugin-svelte"],"singleQuote":true,"semi":true,"printWidth":100,"trailingComma":"all","tabWidth":2,"svelteSortOrder":"scripts-markup-styles"}
+{
+  "plugins": [
+    "prettier-plugin-svelte"
+  ],
+  "singleQuote": true,
+  "semi": true,
+  "printWidth": 100,
+  "trailingComma": "all",
+  "tabWidth": 2,
+  "useTabs": false,
+  "arrowParens": "always",
+  "svelteSortOrder": "scripts-markup-styles"
+}

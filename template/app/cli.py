@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import uvicorn
 from cyclopts import App
@@ -23,6 +24,15 @@ def init_db() -> None:
 @cli.command
 def notes() -> None:
     print(json.dumps(Database(get_settings().database).notes()))
+
+
+@cli.command
+def openapi(output: Path = Path("frontend/openapi.json")) -> None:
+    """Export the current API contract without starting the server."""
+    from .api import app
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(app.openapi(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

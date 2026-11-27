@@ -1,30 +1,38 @@
-export type Note = { id: number; text: string };
-export type Health = { status: string; dependencies: Record<string, string> };
+import createClient from 'openapi-fetch';
+import type { components, paths } from '$lib/generated/api';
 
-export type SystemDiagnostics = {
-  cpu_percent: number; logical_cpus: number | null;
-  memory_used_bytes: number; memory_total_bytes: number;
-  disk_used_bytes: number; disk_total_bytes: number;
-  process_rss_bytes: number; uptime_seconds: number;
-};
+export type Note = components['schemas']['Note'];
+export type Health = components['schemas']['Health'];
+export type SystemDiagnostics = components['schemas']['Diagnostics'];
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch('/api' + path, init);
-  if (!response.ok) throw new Error('Request failed (' + response.status + ')');
-  return response.status === 204 ? undefined as T : await response.json() as T;
-}
+export const client = createClient<paths>({ baseUrl: '' });
 
 export const api = {
-  diagnostics: () => request<SystemDiagnostics>('/diagnostics'),
-  notes: () => request<Note[]>('/notes'),
-  add: (text: string) => request<Note>('/notes', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }),
-  }),
-  remove: (id: number) => request<void>('/notes/' + id, { method: 'DELETE' }),
-  health: async (): Promise<Health> => {
-    const response = await fetch('/api/health');
-    if (![200, 503].includes(response.status)) throw new Error('Health check failed');
-    return response.json();
+  async notes(): Promise<Note[]> {
+    const { data, response } = await client.GET('/api/notes');
+    if (data === undefined) throw new Error('Request failed (' + response.status + ')');
+    return data;
+  },
+  async add(text: string): Promise<Note> {
+    const { data, response } = await client.POST('/api/notes', { body: { text } });
+    if (data === undefined) throw new Error('Request failed (' + response.status + ')');
+    return data;
+  },
+  async remove(id: number): Promise<void> {
+    const { response } = await client.DELETE('/api/notes/{note_id}', {
+      params: { path: { note_id: id } },
+    });
+    if (!response.ok) throw new Error('Request failed (' + response.status + ')');
+  },
+  async health(): Promise<Health> {
+    const { data, error, response } = await client.GET('/api/health');
+    if (data !== undefined) return data;
+    if (response.status === 503 && error !== undefined) return error;
+    throw new Error('Health check failed (' + response.status + ')');
+  },
+  async diagnostics(): Promise<SystemDiagnostics> {
+    const { data, response } = await client.GET('/api/diagnostics');
+    if (data === undefined) throw new Error('Request failed (' + response.status + ')');
+    return data;
   },
 };
-

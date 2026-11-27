@@ -19,7 +19,10 @@ Official shadcn-svelte components are vendored in frontend/src/lib/components/ui
 
 Install Caddy, run task build and task serve from the project directory. Caddy binds to loopback on port 8080. For private HTTPS access, authenticate Tailscale, enable MagicDNS and HTTPS, then run task tailscale. Restrict tailnet grants to intended users/devices. Do not use Funnel without introducing application authentication. For direct LAN access explicitly configure a Caddy listener, HTTPS and appropriate access controls.
 
-MCP: streamable HTTP at /mcp/ on the API or Caddy origin; exposes read-only list_notes. Native browser notifications require permission and localhost or HTTPS. They work while the page is open; no background push service is included.
+{% if enable_mcp %}
+MCP: streamable HTTP at /mcp/ on the API or Caddy origin; exposes read-only list_notes.
+{% endif %}
+Native browser notifications require permission and localhost or HTTPS. They work while the page is open; no background push service is included.
 {% if enable_terminal %}
 
 ## Terminal
@@ -29,7 +32,7 @@ Install ttyd (includes xterm.js) on the Linux host. Run as an unprivileged accou
 
 ## Development
 
-task check, task fix, task test, task test:e2e, task build. Install Chromium using cd frontend && pnpm exec playwright install chromium (then return to the project root). After git init, install hooks using uv run pre-commit install.
+task check, task fix, task test, task test:e2e, task build. Install Chromium using cd frontend && pnpm exec playwright install chromium (then return to the project root). Setup installs pre-commit hooks if this project is already a Git repository. Otherwise run task hooks:install after git init.
 
 
 ## Reusable UI
@@ -45,3 +48,7 @@ The optional /api/events SSE stream sends current notes on connection and when t
 ## Screenshots
 
 Run task screenshots after installing Chromium. The Playwright capture suite saves real PNGs in screenshots/ using a dedicated test database. The source template has a manual Screenshots workflow to publish images.
+
+## API contract and frontend checks
+
+Run task api:generate whenever Python API models or routes change. It exports FastAPI's OpenAPI schema without starting a server, then generates frontend/src/lib/generated/api.d.ts using openapi-typescript. Commit the generated declarations; frontend/openapi.json is a disposable intermediate. Use openapi-fetch via src/lib/api.ts. Never hand-edit generated types. task api:check detects stale declarations; task check runs it along with ESLint, Prettier and svelte-check. task fix applies Ruff, ESLint and Prettier fixes. Setup normalizes the initial frontend formatting; CI validates the generated baseline. Generated declarations and vendored shadcn registry files are excluded from application lint/format rules but are included in type checking and builds.

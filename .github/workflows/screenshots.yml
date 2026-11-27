@@ -1,6 +1,8 @@
 name: Screenshots
 on:
   workflow_dispatch:
+  push:
+    paths: ['.github/workflows/screenshots.yml']
 permissions:
   contents: write
 concurrency:
@@ -29,6 +31,10 @@ jobs:
           uv sync
           cd frontend
           pnpm install --no-frozen-lockfile
+          cd ..
+          uv run python -m app.cli openapi
+          cd frontend
+          pnpm api:generate
           pnpm exec playwright install --with-deps chromium
       - name: Capture screenshots
         timeout-minutes: 5

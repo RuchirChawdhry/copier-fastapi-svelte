@@ -12,3 +12,15 @@ repos:
         language: system
         types: [python]
 
+      - id: frontend-eslint
+        name: ESLint staged frontend files
+        entry: uv run python scripts/frontend_hook.py eslint
+        language: system
+        files: ^frontend/.*\.(svelte|ts|js|mjs)$
+        exclude: ^frontend/src/lib/(generated|components/ui)/
+      - id: frontend-prettier
+        name: Prettier staged frontend files
+        entry: uv run python scripts/frontend_hook.py prettier
+        language: system
+        files: ^frontend/.*\.(svelte|ts|js|mjs|css|html|json)$
+        exclude: ^frontend/(openapi\.json|src/lib/(generated|components/ui)/)

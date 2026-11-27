@@ -1,7 +1,11 @@
 http://:8080 {
     bind 127.0.0.1
 
+{% if enable_mcp %}
     @backend path /api/* /mcp /mcp/* /docs /openapi.json /redoc
+{% else %}
+    @backend path /api/* /docs /openapi.json /redoc
+{% endif %}
     handle @backend {
         reverse_proxy 127.0.0.1:8000
     }

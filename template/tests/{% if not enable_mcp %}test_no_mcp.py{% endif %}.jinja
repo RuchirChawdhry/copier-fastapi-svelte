@@ -1,0 +1,2 @@
+def test_mcp_not_installed(client):
+    assert client.post("/mcp/", json={}).status_code == 404

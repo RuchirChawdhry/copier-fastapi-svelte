@@ -30,3 +30,8 @@ enable_events:
   type: bool
   default: false
   help: Include live Server-Sent Events notifications?
+
+enable_mcp:
+  type: bool
+  default: false
+  help: Include FastMCP Streamable HTTP tools?

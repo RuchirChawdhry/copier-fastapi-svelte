@@ -5,7 +5,7 @@
 - Use shared theme tokens, not component-specific colors. Keep Script → Markup → Style.
 - Prefer maintained libraries and straightforward implementation. No gratuitous abstraction.
 - Use typed FastAPI responses, parameterized SQL, shared Database and cached Settings.
-- REST and MCP share application services. Keep MCP tools read-only unless intentionally authorized.
+- If MCP is enabled, REST and MCP share application services. Keep MCP tools read-only unless intentionally authorized.
 - Add focused tests for meaningful changes; strict test-first sequencing is not required.
 - Never expose ttyd, API or MCP publicly without appropriate access controls.
 - Run checks and verify behavior before reporting completion.
@@ -14,3 +14,6 @@
 - SvelteKit is static SPA only; do not add a second application backend or server actions.
 - Diagnostics use psutil. Keep optional SSE and Taskiq dependencies/files conditional in Copier.
 - Run task screenshots to verify visuals using a dedicated test database.
+
+- After changing Python models or routes, run task api:generate. Use the generated components and paths through openapi-fetch; never duplicate API contracts or edit generated declarations.
+- Run task fix and task check before committing. ESLint handles Svelte/TypeScript; Prettier owns formatting. Do not disable lint rules to pass CI.

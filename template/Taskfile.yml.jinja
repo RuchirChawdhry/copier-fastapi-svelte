@@ -7,6 +7,7 @@ tasks:
     cmds:
       - uv sync
       - task: ui:install
+      - task: api:generate
   ui:install:
     dir: frontend
     cmds:
@@ -16,9 +17,36 @@ tasks:
     cmds:
       - task: install
       - uv run python -m app.cli init-db
+      - task: ui:format
+      - task: hooks:install
+  hooks:install:
+    desc: Install pre-commit hooks in Git projects
+    status:
+      - uv run python -c "from pathlib import Path; import sys; sys.exit(0 if not Path('.git').exists() else 1)"
+    cmds:
+      - uv run pre-commit install
+  api:generate:
+    desc: Export FastAPI OpenAPI and regenerate typed frontend client
+    cmds:
+      - uv run python -m app.cli openapi
+      - task: ui:api:generate
+  ui:api:generate:
+    dir: frontend
+    cmds:
+      - pnpm api:generate
+  api:check:
+    desc: Fail if generated TypeScript API types are stale
+    cmds:
+      - uv run python -m app.cli openapi
+      - task: ui:api:check
+  ui:api:check:
+    dir: frontend
+    cmds:
+      - pnpm api:check
   dev:
     desc: API and Vite hot reload
     cmds:
+      - task: api:generate
       - task --parallel api:dev ui:dev
   api:dev:
     cmds:
@@ -30,6 +58,7 @@ tasks:
   build:
     desc: Build frontend and Python distribution
     cmds:
+      - task: api:generate
       - task: ui:build
       - uv build
   ui:build:
@@ -66,16 +95,25 @@ tasks:
     cmds:
       - uv run ruff check app tests
       - uv run ty check app
+      - task: api:check
       - task: ui:check
   ui:check:
     dir: frontend
     cmds:
+      - pnpm lint
+      - pnpm format:check
       - pnpm check
   fix:
     cmds:
       - uv run ruff check --fix app tests
       - uv run ruff format app tests
-      - task: ui:format
+      - task: api:generate
+      - task: ui:fix
+  ui:fix:
+    dir: frontend
+    cmds:
+      - pnpm lint:fix
+      - pnpm format
   ui:format:
     dir: frontend
     cmds:

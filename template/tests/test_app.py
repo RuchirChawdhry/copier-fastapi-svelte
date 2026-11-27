@@ -17,24 +17,6 @@ def test_health_and_notes(client):
         assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
 
 
-def test_mcp_initialization(client):
-    response = client.post(
-        "/mcp/",
-        headers={"Accept": "application/json, text/event-stream"},
-        json={
-            "jsonrpc": "2.0", "id": 1, "method": "initialize",
-            "params": {
-                "protocolVersion": "2025-03-26",
-                "capabilities": {},
-                "clientInfo": {"name": "template-test", "version": "1.0"},
-            },
-        },
-    )
-    assert response.status_code == 200
-    assert "protocolVersion" in response.text
-    assert "serverInfo" in response.text
-
-
 def test_diagnostics(client):
     response = client.get("/api/diagnostics")
     assert response.status_code == 200

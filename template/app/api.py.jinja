@@ -1,6 +1,10 @@
 import asyncio
 import sqlite3
+{% if enable_jobs or enable_mcp %}
 from contextlib import AsyncExitStack, asynccontextmanager
+{% else %}
+from contextlib import asynccontextmanager
+{% endif %}
 
 {% if enable_jobs %}
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -28,7 +32,9 @@ from .events import note_events
 {% if enable_jobs %}
 from .jobs import broker, save_note
 {% endif %}
+{% if enable_mcp %}
 from .mcp import create_mcp
+{% endif %}
 
 
 class NoteInput(BaseModel):
@@ -48,13 +54,18 @@ class Health(BaseModel):
 def create_app() -> FastAPI:
     settings = get_settings()
     database = Database(settings.database)
+{% if enable_mcp %}
     mcp_app = create_mcp(database).http_app(path="/")
+{% endif %}
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         await asyncio.to_thread(database.initialize)
+{% if enable_jobs or enable_mcp %}
         async with AsyncExitStack() as stack:
+{% if enable_mcp %}
             await stack.enter_async_context(mcp_app.lifespan(app))
+{% endif %}
 {% if enable_jobs %}
             if not broker.is_worker_process:
                 await broker.startup()
@@ -63,10 +74,15 @@ def create_app() -> FastAPI:
             stack.push_async_callback(app.state.redis.aclose)
 {% endif %}
             yield
+{% else %}
+        yield
+{% endif %}
 
 
     app = FastAPI(title={{ project_name | tojson }}, lifespan=lifespan)
+{% if enable_mcp %}
     app.mount("/mcp", mcp_app)
+{% endif %}
 
 
     @app.get("/api/health/live")
@@ -74,8 +90,8 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
 
-    @app.get("/api/health")
-    @app.get("/api/health/ready")
+    @app.get("/api/health", responses={503: {"model": Health}})
+    @app.get("/api/health/ready", responses={503: {"model": Health}})
     async def health(response: Response{% if enable_jobs %}, request: Request{% endif %}) -> Health:
         dependencies = {}
         try:

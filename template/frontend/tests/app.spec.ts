@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test('notes, context menu, command palette and five persisted themes', async ({ page }) => {
+  page.on('pageerror', (error) => console.error('Browser page error:', error));
+  page.on('console', (message) => { if (message.type() === 'error') console.error(message.text()); });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
   const note = 'Browser integration ' + Date.now();

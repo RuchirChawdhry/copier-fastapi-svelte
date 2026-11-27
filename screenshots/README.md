@@ -4,3 +4,6 @@ Run the manually triggered **Screenshots** workflow to capture the generated app
 
 
 Includes the command palette and context menu with icons, settings switches, TanStack validation, the optional SJSF form, diagnostics, toasts and all five themes.
+
+- `10-dropdown-menu.png` — workspace actions dropdown.
+- `11-sidebar-collapsed.png` — icon-only sidebar; expanded sidebar appears in the existing overview and other screen captures.

@@ -23,6 +23,16 @@ test('capture application screens', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'Review project requirements', exact: true })).toBeVisible({ timeout: 20000 });
   await page.getByRole('button', { name: 'Review project requirements', exact: true }).click();
   await capture(page, '01-overview-dark');
+  await page.getByRole('button', { name: 'Workspace actions' }).click();
+  await expect(page.getByRole('menuitem', { name: 'API documentation' })).toBeVisible();
+  await capture(page, '10-dropdown-menu');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Toggle sidebar', exact: true }).click();
+  await expect(page.locator('[data-slot="sidebar"][data-state="collapsed"]')).toBeVisible();
+  await page.mouse.move(700, 100);
+  await capture(page, '11-sidebar-collapsed');
+  await page.getByRole('button', { name: 'Toggle sidebar', exact: true }).click();
+  await expect(page.locator('[data-slot="sidebar"][data-state="expanded"]')).toBeVisible();
   const schemaForm = page.getByRole('heading', { name: 'Schema-generated note' });
   if (await schemaForm.count()) {
     await schemaForm.scrollIntoViewIfNeeded();
@@ -47,13 +57,15 @@ test('capture application screens', async ({ page, request }) => {
   await capture(page, '09-settings-toggles');
   await page.getByRole('switch', { name: 'Success notifications' }).click();
   for (const [label, id] of [['Light', 'light'], ['OLED', 'oled'], ['Solarized Light (Warm)', 'solarized-light'], ['Solarized Dark', 'solarized-dark']]) {
-    await page.getByRole('button', { name: label, exact: true }).click();
+    await page.getByRole('combobox', { name: 'Color theme' }).click();
+    await page.getByRole('option', { name: label, exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', id);
     await page.getByRole('button', { name: 'Overview' }).click();
     await capture(page, 'theme-' + id);
     await page.getByRole('button', { name: 'Settings' }).click();
   }
-  await page.getByRole('button', { name: 'Dark', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Color theme' }).click();
+  await page.getByRole('option', { name: 'Dark', exact: true }).click();
   await page.getByRole('button', { name: 'Test notification' }).click();
   await expect(page.getByText('Notification test', { exact: true })).toBeVisible();
   await capture(page, '06-toast');

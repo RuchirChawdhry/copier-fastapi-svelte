@@ -30,7 +30,8 @@ test('notes, context menu, command palette and five persisted themes', async ({ 
     ['Dark', 'dark'], ['Light', 'light'], ['OLED', 'oled'],
     ['Solarized Light (Warm)', 'solarized-light'], ['Solarized Dark', 'solarized-dark'],
   ]) {
-    await page.getByRole('button', { name: label, exact: true }).click();
+    await page.getByRole('combobox', { name: 'Color theme' }).click();
+    await page.getByRole('option', { name: label, exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', id);
   }
   await page.reload();
@@ -62,4 +63,31 @@ test('diagnostics cache is reused on immediate navigation', async ({ page }) => 
   expect(requests).toBe(1);
   await page.getByRole('button', { name: 'Refresh metrics' }).click();
   await expect.poll(() => requests).toBe(2);
+});
+
+
+test('workspace menu and sidebar keyboard navigation', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Workspace actions' }).click();
+  await expect(page.getByRole('menuitem', { name: 'API documentation' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Open settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await page.keyboard.press('Control+b');
+  await expect(page.locator('[data-slot="sidebar"][data-state="collapsed"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('[data-slot="sidebar"][data-state="collapsed"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Toggle sidebar', exact: true }).click();
+  await expect(page.locator('[data-slot="sidebar"][data-state="expanded"]')).toBeVisible();
+});
+
+test('mobile sidebar opens and closes on navigation', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Toggle sidebar', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });

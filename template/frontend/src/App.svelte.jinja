@@ -17,7 +17,19 @@
   import MoonStar from '@lucide/svelte/icons/moon-star';
   import Accessibility from '@lucide/svelte/icons/accessibility';
   import MessageSquare from '@lucide/svelte/icons/message-square';
-  import { Switch } from 'bits-ui';
+  import { Switch } from '$lib/components/ui/switch/index.js';
+  import { Separator } from '$lib/components/ui/separator/index.js';
+  import { Kbd, KbdGroup } from '$lib/components/ui/kbd/index.js';
+  import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+  import * as Dropdown from '$lib/components/ui/dropdown-menu/index.js';
+  import * as Item from '$lib/components/ui/item/index.js';
+  import * as Marker from '$lib/components/ui/marker/index.js';
+  import * as Select from '$lib/components/ui/select/index.js';
+  import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Keyboard from '@lucide/svelte/icons/keyboard';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
+  import WorkspaceSidebar from '$lib/WorkspaceSidebar.svelte';
   import { preferences, setPreference } from '$lib/preferences.svelte';
   import Search from '@lucide/svelte/icons/search';
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
@@ -44,9 +56,9 @@
 
   const themeIcons = { dark: Moon, light: Sun, oled: Monitor, 'solarized-light': Sunset, 'solarized-dark': MoonStar };
   let theme = $state<Theme>(currentTheme());
-  const switchClass = 'inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-input bg-input p-0.5 transition-colors data-[state=checked]:bg-primary focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50';
-  const thumbClass = 'block size-5 rounded-full bg-background shadow transition-transform data-[state=checked]:translate-x-5';
   let palette = $state(false);
+  let sidebarOpen = $state(!document.cookie.split('; ').includes('sidebar_state=false'));
+  const modifier = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
   let page = $state<'workspace' | 'settings' | 'diagnostics'>('workspace');
   const queryClient = useQueryClient();
   const notesQuery = createQuery(() => notesOptions);
@@ -133,26 +145,48 @@
 
 <svelte:window onkeydown={keyboard} />
 <Toaster theme={dark ? 'dark' : 'light'} position="bottom-right" richColors />
-<div class="min-h-screen bg-background text-foreground">
-  <header class="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background px-4 md:px-6">
-    <div class="grid size-8 place-items-center rounded-md bg-primary font-bold text-primary-foreground">A</div>
-    <span class="font-semibold">{{ project_name | e }}</span>
-    <div class="flex-1"></div>
-    <Button variant="outline" onclick={() => palette = true}><Search class="size-4" /> Search commands <kbd class="ml-4 text-xs text-muted-foreground">Ctrl K</kbd></Button>
-  </header>
-  <div class="mx-auto grid max-w-screen-2xl md:grid-cols-[220px_1fr]">
-    <aside class="flex gap-2 border-b p-4 md:min-h-[calc(100vh-56px)] md:flex-col md:border-r md:border-b-0">
-      <p class="hidden px-3 py-2 text-xs font-medium uppercase tracking-widest text-muted-foreground md:block">Workspace</p>
-      <Button variant={page === 'workspace' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'workspace'}><LayoutDashboard class="size-4" /> Overview</Button>
-      <Button variant={page === 'settings' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'settings'}><Settings class="size-4" /> Settings</Button>
-      <Button variant={page === 'diagnostics' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'diagnostics'}><Activity class="size-4" /> Diagnostics</Button>
+<Sidebar.Provider bind:open={sidebarOpen} style="--sidebar-width: 14rem; --sidebar-width-icon: 3.25rem;">
+  <WorkspaceSidebar projectName={{ project_name | tojson }} {page} onNavigate={(destination) => page = destination} />
+  <Sidebar.Inset class="min-w-0 text-foreground">
+    <header class="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background px-4 md:px-6">
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          {#snippet child({ props })}
+            <Sidebar.Trigger {...props} aria-label="Toggle sidebar" />
+          {/snippet}
+        </Tooltip.Trigger>
+        <Tooltip.Content><span>Toggle sidebar</span> <KbdGroup><Kbd>{modifier}</Kbd><Kbd>B</Kbd></KbdGroup></Tooltip.Content>
+      </Tooltip.Root>
+      <Separator orientation="vertical" class="!h-5" />
+      <span class="truncate text-sm font-medium">{page === 'workspace' ? 'Overview' : page === 'settings' ? 'Settings' : 'Diagnostics'}</span>
       <div class="flex-1"></div>
+      <Button variant="outline" onclick={() => palette = true} aria-label="Search commands"><Search class="size-4" /><span class="hidden sm:inline">Search commands</span><KbdGroup class="ml-2 hidden sm:inline-flex"><Kbd>{modifier}</Kbd><Kbd>K</Kbd></KbdGroup></Button>
+      <Dropdown.Root>
+        <Dropdown.Trigger>
+          {#snippet child({ props })}
+            <Button {...props} variant="outline" size="icon" aria-label="Workspace actions"><Ellipsis class="size-4" /></Button>
+          {/snippet}
+        </Dropdown.Trigger>
+        <Dropdown.Content align="end" class="w-56">
+          <Dropdown.Group>
+            <Dropdown.Label>Workspace actions</Dropdown.Label>
+            <Dropdown.Item onSelect={refresh}><RefreshCw aria-hidden="true" /> Refresh data</Dropdown.Item>
+            <Dropdown.Item onSelect={() => palette = true}><Keyboard aria-hidden="true" /> Search commands <Dropdown.Shortcut>{modifier}+K</Dropdown.Shortcut></Dropdown.Item>
+            <Dropdown.Item onSelect={() => page = 'settings'}><Settings aria-hidden="true" /> Open settings</Dropdown.Item>
+            <Dropdown.Item onSelect={() => page = 'diagnostics'}><Activity aria-hidden="true" /> Diagnostics</Dropdown.Item>
+          </Dropdown.Group>
+          <Dropdown.Separator />
+          <Dropdown.Group>
+            <Dropdown.Label>Resources</Dropdown.Label>
+            <Dropdown.Item onSelect={() => window.open('/docs', '_blank', 'noopener,noreferrer')}><ExternalLink aria-hidden="true" /> API documentation</Dropdown.Item>
 {% if enable_rss %}
-      <a class="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground" href="/feed.rss" target="_blank" rel="noopener noreferrer"><Rss aria-hidden="true" class="size-4 shrink-0" /> RSS feed</a>
+            <Dropdown.Item onSelect={copyFeed}><Rss aria-hidden="true" /> Copy RSS feed URL</Dropdown.Item>
 {% endif %}
-      <a class="hidden px-3 py-2 text-xs text-muted-foreground md:block" href="/api/health" target="_blank" rel="external noreferrer">API health ↗</a>
-    </aside>
-    <main class="space-y-6 p-5 md:p-9">
+          </Dropdown.Group>
+        </Dropdown.Content>
+      </Dropdown.Root>
+    </header>
+    <div class="mx-auto w-full max-w-screen-2xl space-y-6 p-5 md:p-9">
       {#if page === 'workspace'}
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div><p class="text-xs font-medium uppercase tracking-widest text-muted-foreground">Application</p><h1 class="mt-1 text-3xl font-semibold tracking-tight">Overview</h1></div>
@@ -179,7 +213,9 @@
             <PaneResizer class="w-2 rounded bg-border hover:bg-ring focus-visible:bg-ring" />
             <Pane defaultSize={30} minSize={20}>
               <div class="pl-4">
-                <h3 class="mb-2 text-sm font-medium">Note details</h3>
+                <Marker.Root variant="separator" class="mb-4">
+                  <Marker.Content>Note details</Marker.Content>
+                </Marker.Root>
                 {#if selected}
                   <p class="mb-2 font-mono text-xs text-muted-foreground">ID {selected.id}</p>
                   <p class="break-all text-sm">{selected.text}</p>
@@ -203,45 +239,56 @@
         <section class="rounded-lg border bg-card p-5">
           <h2 class="text-lg font-semibold">Appearance</h2>
           <p class="mb-4 text-sm text-muted-foreground">Theme preference is saved on this browser.</p>
-          <div class="flex flex-wrap gap-2">
-            {#each themes as option (option.id)}
-              <Button variant={theme === option.id ? 'default' : 'outline'} aria-pressed={theme === option.id} onclick={() => setTheme(option.id)}>{option.label}</Button>
-            {/each}
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <label for="theme-select" class="font-medium">Color theme</label>
+              <p class="mt-1 text-sm text-muted-foreground">Choose one of five application themes.</p>
+            </div>
+            <Select.Root type="single" value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+              <Select.Trigger id="theme-select" aria-label="Color theme" class="min-w-48">{themes.find(option => option.id === theme)?.label}</Select.Trigger>
+              <Select.Content>
+                {#each themes as option (option.id)}
+                  {@const Icon = themeIcons[option.id]}
+                  <Select.Item value={option.id} label={option.label}><Icon class="size-4" aria-hidden="true" /> {option.label}</Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
           </div>
         </section>
         <section class="rounded-lg border bg-card p-5">
           <h2 class="flex items-center gap-2 text-lg font-semibold"><Bell class="size-5" aria-hidden="true" /> Notifications</h2>
           <p class="mb-4 text-sm text-muted-foreground">Control which notifications this browser displays.</p>
-          <div class="flex items-center justify-between gap-4 border-b py-4">
-            <div>
+          <Item.Root class="px-0">
+            <Item.Content>
               <label for="success-toasts" class="flex items-center gap-2 font-medium"><MessageSquare class="size-4" aria-hidden="true" /> Success notifications</label>
-              <p id="success-description" class="mt-1 text-sm text-muted-foreground">Show a toast when an operation succeeds. Errors always remain visible.</p>
-            </div>
-            <Switch.Root id="success-toasts" aria-describedby="success-description" checked={preferences.successToasts} onCheckedChange={(value) => setPreference('successToasts', value)} class={switchClass}><Switch.Thumb class={thumbClass} /></Switch.Root>
-          </div>
-          <div class="flex items-center justify-between gap-4 py-4">
-            <div>
+              <Item.Description id="success-description">Show a toast when an operation succeeds. Errors always remain visible.</Item.Description>
+            </Item.Content>
+            <Item.Actions><Switch id="success-toasts" aria-describedby="success-description" checked={preferences.successToasts} onCheckedChange={(value) => setPreference('successToasts', value)} /></Item.Actions>
+          </Item.Root>
+          <Separator />
+          <Item.Root class="px-0">
+            <Item.Content>
               <label for="desktop-notifications" class="flex items-center gap-2 font-medium"><Monitor class="size-4" aria-hidden="true" /> Desktop notifications</label>
-              <p id="desktop-description" class="mt-1 text-sm text-muted-foreground">Allow browser notifications while the application is open, subject to browser permission.</p>
-            </div>
-            <Switch.Root id="desktop-notifications" aria-describedby="desktop-description" checked={preferences.desktopNotifications} onCheckedChange={(value) => value ? void requestNotifications() : setPreference('desktopNotifications', false)} class={switchClass}><Switch.Thumb class={thumbClass} /></Switch.Root>
-          </div>
+              <Item.Description id="desktop-description">Allow browser notifications while the application is open, subject to browser permission.</Item.Description>
+            </Item.Content>
+            <Item.Actions><Switch id="desktop-notifications" aria-describedby="desktop-description" checked={preferences.desktopNotifications} onCheckedChange={(value) => value ? void requestNotifications() : setPreference('desktopNotifications', false)} /></Item.Actions>
+          </Item.Root>
           <Button variant="outline" onclick={() => { toast.success('Notification test'); if (preferences.desktopNotifications && 'Notification' in window && Notification.permission === 'granted') new Notification('Notification test'); }}><Bell class="size-4" aria-hidden="true" /> Test notification</Button>
         </section>
         <section class="rounded-lg border bg-card p-5">
           <h2 class="flex items-center gap-2 text-lg font-semibold"><Accessibility class="size-5" aria-hidden="true" /> Accessibility</h2>
-          <div class="flex items-center justify-between gap-4 pt-4">
-            <div>
+          <Item.Root class="px-0">
+            <Item.Content>
               <label for="reduced-motion" class="font-medium">Reduce motion</label>
-              <p id="motion-description" class="mt-1 text-sm text-muted-foreground">Minimize transitions, animations and smooth scrolling.</p>
-            </div>
-            <Switch.Root id="reduced-motion" aria-describedby="motion-description" checked={preferences.reducedMotion} onCheckedChange={(value) => setPreference('reducedMotion', value)} class={switchClass}><Switch.Thumb class={thumbClass} /></Switch.Root>
-          </div>
+              <Item.Description id="motion-description">Minimize transitions, animations and smooth scrolling.</Item.Description>
+            </Item.Content>
+            <Item.Actions><Switch id="reduced-motion" aria-describedby="motion-description" checked={preferences.reducedMotion} onCheckedChange={(value) => setPreference('reducedMotion', value)} /></Item.Actions>
+          </Item.Root>
         </section>
       {/if}
-    </main>
-  </div>
-</div>
+    </div>
+  </Sidebar.Inset>
+</Sidebar.Provider>
 
 <Command.Dialog bind:open={palette}>
   <Command.Input placeholder="Type a command…" />

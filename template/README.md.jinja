@@ -77,3 +77,7 @@ The RSS 2.0 feed is available at /feed.rss through FastAPI, Vite and Caddy. It i
 ## Task command interface
 
 Run `task --list-all` to discover commands. Use `task install`, `task setup`, `task dev`, `task build`, `task serve`, `task check`, `task fix`, `task test`, `task test:all`, `task test:e2e`, `task screenshots`, `task benchmark`, `task db:init`, `task api:generate`, `task api:check`. Add packages with `task api:add -- package` or `task ui:dependency:add -- package`; remove packages with `task api:remove -- package` or `task ui:dependency:remove -- package`. Install platform prerequisites (Go Task, uv, Node, pnpm and any optional system services) first; the Taskfile owns project-level operations, not system package management.
+
+## Navigation and settings
+
+The workspace uses the official Vega shadcn-svelte sidebar with icon collapse (Ctrl/Command+B), mobile sheet navigation, a dropdown action menu, keyboard hints, theme select, accessible switches, item rows, separators, markers and tooltips. Sidebar state persists in a browser cookie. The standard screenshot workflow captures the dropdown and collapsed sidebar in addition to the existing screens.

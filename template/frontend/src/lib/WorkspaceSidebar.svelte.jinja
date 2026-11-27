@@ -1,0 +1,70 @@
+<script lang="ts">
+  import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+  import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Activity from '@lucide/svelte/icons/activity';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
+{% if enable_rss %}
+  import Rss from '@lucide/svelte/icons/rss';
+{% endif %}
+  type Page = 'workspace' | 'settings' | 'diagnostics';
+  let { projectName, page, onNavigate }: { projectName: string; page: Page; onNavigate: (page: Page) => void } = $props();
+  const sidebar = Sidebar.useSidebar();
+  const navigation = [
+    { id: 'workspace', label: 'Overview', icon: LayoutDashboard },
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
+  ] as const;
+  function navigate(destination: Page) {
+    onNavigate(destination);
+    if (sidebar.isMobile) sidebar.setOpenMobile(false);
+  }
+</script>
+
+<Sidebar.Root collapsible="icon">
+  <Sidebar.Header class="h-14 justify-center border-b">
+    <div class="flex items-center gap-3 overflow-hidden px-1">
+      <div class="grid size-8 shrink-0 place-items-center rounded-md bg-primary font-bold text-primary-foreground">A</div>
+      <span class="truncate text-sm font-semibold group-data-[collapsible=icon]:hidden">{projectName}</span>
+    </div>
+  </Sidebar.Header>
+  <Sidebar.Content>
+    <Sidebar.Group>
+      <Sidebar.GroupLabel>Workspace</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <Sidebar.Menu>
+          {#each navigation as item (item.id)}
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton isActive={page === item.id} aria-current={page === item.id ? 'page' : undefined} aria-label={item.label} tooltipContent={item.label} onclick={() => navigate(item.id)}>
+                <item.icon aria-hidden="true" />
+                <span>{item.label}</span>
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+          {/each}
+        </Sidebar.Menu>
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
+  </Sidebar.Content>
+  <Sidebar.Footer>
+    <Sidebar.Separator />
+    <Sidebar.Menu>
+{% if enable_rss %}
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton tooltipContent="RSS feed">
+          {#snippet child({ props })}
+            <a {...props} href="/feed.rss" target="_blank" rel="noopener noreferrer" aria-label="RSS feed"><Rss aria-hidden="true" /><span>RSS feed</span></a>
+          {/snippet}
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+{% endif %}
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton tooltipContent="API health">
+          {#snippet child({ props })}
+            <a {...props} href="/api/health" target="_blank" rel="noopener noreferrer" aria-label="API health"><ExternalLink aria-hidden="true" /><span>API health</span></a>
+          {/snippet}
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+    </Sidebar.Menu>
+  </Sidebar.Footer>
+  <Sidebar.Rail />
+</Sidebar.Root>

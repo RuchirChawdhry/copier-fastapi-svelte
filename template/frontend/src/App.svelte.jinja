@@ -41,7 +41,7 @@
 {% endif %}
   import NotesTable from '$lib/NotesTable.svelte';
   import Diagnostics from '$lib/Diagnostics.svelte';
-  import { api{% if enable_events %}, type Note{% endif %} } from '$lib/api';
+  import { api } from '$lib/api';
   import { themes, applyTheme, currentTheme, type Theme } from '$lib/theme';
   import { notify, requestNotifications } from '$lib/notifications';
 {% if enable_terminal %}
@@ -123,13 +123,11 @@
 {% if enable_events %}
   onMount(() => {
     const stream = new EventSource('/api/events');
-    let initialized = false;
-    stream.addEventListener('notes', (event: MessageEvent<string>) => {
-      const incoming: Note[] = JSON.parse(event.data);
-      const changed = JSON.stringify(incoming) !== JSON.stringify(notes);
-      if (changed) queryClient.setQueryData(notesOptions.queryKey, incoming);
-      if (initialized && changed) notify('Notes updated', true);
-      initialized = true;
+    let previous: string | undefined;
+    stream.addEventListener('notes-changed', (event: MessageEvent<string>) => {
+      void queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
+      if (previous !== undefined && previous !== event.data) notify('Notes updated', true);
+      previous = event.data;
     });
     return () => stream.close();
   });

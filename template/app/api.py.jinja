@@ -1,6 +1,6 @@
 import asyncio
 import sqlite3
-{% if enable_jobs or enable_mcp %}
+{% if enable_jobs or enable_mcp or enable_events %}
 from contextlib import AsyncExitStack, asynccontextmanager
 {% else %}
 from contextlib import asynccontextmanager
@@ -28,7 +28,7 @@ from .config import get_settings
 from .db import Database
 from .diagnostics import Diagnostics, collect_diagnostics
 {% if enable_events %}
-from .events import note_events
+from .events import NoteEvents
 {% endif %}
 {% if enable_jobs %}
 from .jobs import broker, save_note
@@ -56,6 +56,9 @@ class Health(BaseModel):
 def create_app() -> FastAPI:
     settings = get_settings()
     database = Database(settings.database)
+{% if enable_events %}
+    note_events = NoteEvents(database)
+{% endif %}
 {% if enable_mcp %}
     mcp_app = create_mcp(database).http_app(path="/")
 {% endif %}
@@ -63,8 +66,11 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         await asyncio.to_thread(database.initialize)
-{% if enable_jobs or enable_mcp %}
+{% if enable_jobs or enable_mcp or enable_events %}
         async with AsyncExitStack() as stack:
+{% if enable_events %}
+            await stack.enter_async_context(note_events.monitor())
+{% endif %}
 {% if enable_mcp %}
             await stack.enter_async_context(mcp_app.lifespan(app))
 {% endif %}
@@ -149,7 +155,7 @@ def create_app() -> FastAPI:
 {% if enable_events %}
     @app.get("/api/events")
     async def events() -> EventSourceResponse:
-        return EventSourceResponse(note_events(database), ping=15)
+        return EventSourceResponse(note_events.subscribe(), ping=15)
 {% endif %}
 
 {% if enable_rss %}

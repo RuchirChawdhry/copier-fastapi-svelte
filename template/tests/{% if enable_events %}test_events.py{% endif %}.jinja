@@ -1,21 +1,68 @@
 import asyncio
-import json
+import sqlite3
 
 from app.db import Database
-from app.events import note_events
+from app.events import NoteEvents
 
 
-def test_events_follow_database_changes(tmp_path):
+def test_shared_revision_monitor(tmp_path, monkeypatch):
     async def check():
         database = Database(tmp_path / "events.sqlite3")
         database.initialize()
-        stream = note_events(database)
+        calls = 0
+        read_revision = database.note_revision
+
+        def count():
+            nonlocal calls
+            calls += 1
+            return read_revision()
+
+        def no_snapshot():
+            raise AssertionError("SSE must not load notes")
+
+        monkeypatch.setattr(database, "note_revision", count)
+        monkeypatch.setattr(database, "notes", no_snapshot)
+        hub = NoteEvents(database)
+        await hub.refresh()
+        first, second = hub.subscribe(), hub.subscribe()
         try:
-            assert json.loads((await anext(stream))["data"]) == []
-            database.add_note("Event")
-            assert json.loads((await anext(stream))["data"])[0]["text"] == "Event"
+            assert await anext(first) == await anext(second) == {"event": "notes-changed", "data": "0"}
+            assert calls == 1
+            note = Database(database.path).add_note("External worker")
+            await hub.refresh()
+            assert (await anext(first))["data"] == (await anext(second))["data"] == "1"
+            assert calls == 2
+            with sqlite3.connect(database.path) as connection:
+                connection.execute("UPDATE notes SET text = 'Updated' WHERE id = ?", (note["id"],))
+            await hub.refresh()
+            assert (await anext(first))["data"] == "2"
+            database.delete_note(note["id"])
+            await hub.refresh()
+            assert (await anext(second))["data"] == "3"
         finally:
-            await stream.aclose()
+            await first.aclose()
+            await second.aclose()
 
-    asyncio.run(check())
+    asyncio.run(asyncio.wait_for(check(), timeout=5))
 
+
+def test_monitor_lifecycle_and_reconnect(tmp_path):
+    async def check():
+        database = Database(tmp_path / "events.sqlite3")
+        database.initialize()
+        hub = NoteEvents(database, interval=0.01)
+        async with hub.monitor():
+            stream = hub.subscribe()
+            try:
+                assert (await anext(stream))["data"] == "0"
+                database.add_note("Changed")
+                assert (await anext(stream))["data"] == "1"
+            finally:
+                await stream.aclose()
+            reconnect = hub.subscribe()
+            try:
+                assert (await anext(reconnect))["data"] == "1"
+            finally:
+                await reconnect.aclose()
+
+    asyncio.run(asyncio.wait_for(check(), timeout=5))

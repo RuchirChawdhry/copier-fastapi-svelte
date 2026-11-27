@@ -70,7 +70,7 @@ test('capture application screens', async ({ page, request }) => {
   await expect(page.getByText('Enter a note.')).toBeVisible();
   await capture(page, '04-form-validation');
   await page.getByRole('button', { name: 'Open settings', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
   await page.mouse.move(700, 100);
   await capture(page, '05-settings');
   await page.getByRole('switch', { name: 'Reduce motion' }).click();
@@ -83,7 +83,7 @@ test('capture application screens', async ({ page, request }) => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', id);
     await page.getByRole('button', { name: 'Overview' }).click();
     await capture(page, 'theme-' + id);
-    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
   }
   await page.getByRole('combobox', { name: 'Color theme' }).click();
   await page.getByRole('option', { name: 'Dark', exact: true }).click();

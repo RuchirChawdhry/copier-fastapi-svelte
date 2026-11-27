@@ -143,3 +143,15 @@ test('resource navigation, pagination and UTC date filtering', async ({ page, re
     for (const note of notes) await request.delete('/api/notes/' + note.id);
   }
 });
+
+
+test('note API validation errors identify the operation and field', async ({ page }) => {
+  await page.goto('/');
+  await page.route('**/api/notes', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await route.fulfill({ status: 422, json: { detail: [{ loc: ['body', 'text'], msg: 'Rejected by server' }] } });
+  });
+  await page.getByRole('textbox', { name: 'New note' }).fill('Valid client input');
+  await page.getByRole('button', { name: 'Add note' }).click();
+  await expect(page.getByText(/Could not save note: text: Rejected by server/)).toBeVisible();
+});

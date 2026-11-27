@@ -1,5 +1,8 @@
 <script lang="ts">
   import { createTable, FlexRender, rowSortingFeature, createSortedRowModel, sortFns, tableFeatures, columnFilteringFeature, globalFilteringFeature, createFilteredRowModel, filterFn_includesString, rowPaginationFeature, createPaginatedRowModel, type ColumnDef } from '@tanstack/svelte-table';
+  import Eye from '@lucide/svelte/icons/eye';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import { notify } from '$lib/notifications';
@@ -50,9 +53,9 @@
                 <button class="text-left break-all" onclick={() => onSelect(row.original)}>{row.original.text}</button>
               </ContextMenu.Trigger>
               <ContextMenu.Content>
-                <ContextMenu.Item onSelect={() => onSelect(row.original)}>View details</ContextMenu.Item>
-                <ContextMenu.Item onSelect={() => navigator.clipboard.writeText(row.original.text).then(() => notify('Copied'), () => toast.error('Clipboard unavailable'))}>Copy note</ContextMenu.Item>
-                <ContextMenu.Item onSelect={() => onRemove(row.original.id)}>Delete note</ContextMenu.Item>
+                <ContextMenu.Item onSelect={() => onSelect(row.original)}><Eye aria-hidden="true" class="size-4 shrink-0" /> View details</ContextMenu.Item>
+                <ContextMenu.Item onSelect={() => navigator.clipboard.writeText(row.original.text).then(() => notify('Copied'), () => toast.error('Clipboard unavailable'))}><Copy aria-hidden="true" class="size-4 shrink-0" /> Copy note</ContextMenu.Item>
+                <ContextMenu.Item onSelect={() => onRemove(row.original.id)} class="text-destructive"><Trash2 aria-hidden="true" class="size-4 shrink-0" /> Delete note</ContextMenu.Item>
               </ContextMenu.Content>
             </ContextMenu.Root>
           </td>

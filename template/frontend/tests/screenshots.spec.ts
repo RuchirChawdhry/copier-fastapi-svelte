@@ -23,6 +23,12 @@ test('capture application screens', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'Review project requirements', exact: true })).toBeVisible({ timeout: 20000 });
   await page.getByRole('button', { name: 'Review project requirements', exact: true }).click();
   await capture(page, '01-overview-dark');
+  const schemaForm = page.getByRole('heading', { name: 'Schema-generated note' });
+  if (await schemaForm.count()) {
+    await schemaForm.scrollIntoViewIfNeeded();
+    await capture(page, '08-schema-form');
+    await page.evaluate(() => window.scrollTo(0, 0));
+  }
   await page.getByText('Prepare API contract').click({ button: 'right' });
   await expect(page.getByRole('menuitem', { name: 'Copy note' })).toBeVisible();
   await capture(page, '02-context-menu');
@@ -36,6 +42,10 @@ test('capture application screens', async ({ page, request }) => {
   await capture(page, '04-form-validation');
   await page.getByRole('button', { name: 'Settings' }).click();
   await capture(page, '05-settings');
+  await page.getByRole('switch', { name: 'Reduce motion' }).click();
+  await page.getByRole('switch', { name: 'Success notifications' }).click();
+  await capture(page, '09-settings-toggles');
+  await page.getByRole('switch', { name: 'Success notifications' }).click();
   for (const [label, id] of [['Light', 'light'], ['OLED', 'oled'], ['Solarized Light (Warm)', 'solarized-light'], ['Solarized Dark', 'solarized-dark']]) {
     await page.getByRole('button', { name: label, exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', id);

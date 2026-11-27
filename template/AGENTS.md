@@ -10,10 +10,12 @@
 - Never expose ttyd, API or MCP publicly without appropriate access controls.
 - Run checks and verify behavior before reporting completion.
 
-- Reuse NoteForm, NotesTable and PaneForge rather than inventing form, table or resize behavior. Use Zod for client validation and Pydantic for authoritative server validation.
-- SvelteKit is static SPA only; do not add a second application backend or server actions.
+- Reuse NoteForm, NotesTable and PaneForge rather than inventing form, table or resize behavior. Use TanStack Form with Zod for client validation and Pydantic for authoritative server validation.
+- Use standalone Svelte 5 + Vite; do not add a second application backend.
 - Diagnostics use psutil. Keep optional SSE and Taskiq dependencies/files conditional in Copier.
 - Run task screenshots to verify visuals using a dedicated test database.
 
 - After changing Python models or routes, run task api:generate. Use the generated components and paths through openapi-fetch; never duplicate API contracts or edit generated declarations.
 - Run task fix and task check before committing. ESLint handles Svelte/TypeScript; Prettier owns formatting. Do not disable lint rules to pass CI.
+
+- Add left-aligned semantic icons to command and context menu items, preserving visible labels and keyboard navigation. Use accessible switches with persistent settings. Keep SJSF conditional in Copier.

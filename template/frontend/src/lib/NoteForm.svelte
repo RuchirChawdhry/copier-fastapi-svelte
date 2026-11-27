@@ -1,41 +1,48 @@
 <script lang="ts">
-  import { Control, Field, FieldErrors, Label } from 'formsnap';
-  import { defaults, superForm, setError } from 'sveltekit-superforms';
-  import { zod4 } from 'sveltekit-superforms/adapters';
+  import { createForm } from '@tanstack/svelte-form';
   import { z } from 'zod';
   import { Button } from '$lib/components/ui/button/index.js';
+  import { toast } from 'svelte-sonner';
 
   let { onSave }: { onSave: (text: string) => Promise<void> } = $props();
   const schema = z.object({ text: z.string().trim().min(1, 'Enter a note.').max(2000) });
-  const form = superForm(defaults({ text: '' }, zod4(schema)), {
-    SPA: true,
-    validators: zod4(schema),
-    resetForm: false,
-    async onUpdate({ form: result }) {
-      if (!result.valid) return;
+  let submitting = $state(false);
+  const form = createForm(() => ({
+    defaultValues: { text: '' },
+    validators: { onSubmit: schema },
+    onSubmit: async ({ value }) => {
+      submitting = true;
       try {
-        await onSave(result.data.text);
-        result.data.text = '';
+        await onSave(value.text.trim());
+        form.reset();
       } catch (error) {
-        setError(result, 'text', String(error));
+        toast.error(String(error));
+      } finally {
+        submitting = false;
       }
     },
-  });
-  const { form: data, enhance, submitting } = form;
+  }));
 </script>
 
-<form method="POST" use:enhance novalidate class="mb-4 space-y-2">
-  <Field {form} name="text">
-    <Control>
-      {#snippet children({ props })}
-        <Label class="text-sm font-medium">New note</Label>
-        <div class="mt-2 flex gap-2">
-          <input {...props} placeholder="Write a note…" maxlength="2000" bind:value={$data.text} class="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm" />
-          <Button type="submit" disabled={$submitting}>Add note</Button>
-        </div>
-      {/snippet}
-    </Control>
-    <FieldErrors class="text-sm text-destructive" />
-  </Field>
+<form novalidate class="mb-4 space-y-2" onsubmit={(event) => {
+  event.preventDefault();
+  void form.handleSubmit();
+}}>
+  <form.Field name="text">
+    {#snippet children(field)}
+      <label for="new-note" class="text-sm font-medium">New note</label>
+      <div class="mt-2 flex gap-2">
+        <input id="new-note" name={field.name} value={field.state.value}
+          onblur={field.handleBlur} oninput={(event) => field.handleChange(event.currentTarget.value)}
+          aria-invalid={field.state.meta.errors.length > 0}
+          aria-describedby={field.state.meta.errors.length ? 'note-errors' : undefined}
+          placeholder="Write a note…" maxlength="2000"
+          class="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm" />
+        <Button type="submit" disabled={submitting}>Add note</Button>
+      </div>
+      {#if field.state.meta.errors.length}
+        <p id="note-errors" role="alert" class="text-sm text-destructive">{field.state.meta.errors.map(error => error?.message).join(', ')}</p>
+      {/if}
+    {/snippet}
+  </form.Field>
 </form>
-

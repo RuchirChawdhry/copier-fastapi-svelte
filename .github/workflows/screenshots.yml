@@ -1,6 +1,8 @@
 name: Screenshots
 on:
   workflow_dispatch:
+  push:
+    paths: ['.github/workflows/screenshots.yml']
 permissions:
   contents: write
 concurrency:
@@ -16,7 +18,7 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
       - name: Generate example application
-        run: uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD -d 'project_name=Example Workspace' -d enable_events=true . generated
+        run: uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD -d 'project_name=Example Workspace' -d enable_events=true -d enable_schema_forms=true . generated
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: generated/frontend/.node-version

@@ -35,3 +35,8 @@ enable_mcp:
   type: bool
   default: false
   help: Include FastMCP Streamable HTTP tools?
+
+enable_schema_forms:
+  type: bool
+  default: false
+  help: Include JSON Schema-generated forms (SJSF)?

@@ -1,6 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Toaster, toast } from 'svelte-sonner';
+  import Bell from '@lucide/svelte/icons/bell';
+  import Sun from '@lucide/svelte/icons/sun';
+  import Moon from '@lucide/svelte/icons/moon';
+  import Monitor from '@lucide/svelte/icons/monitor';
+  import Sunset from '@lucide/svelte/icons/sunset';
+  import MoonStar from '@lucide/svelte/icons/moon-star';
+  import Accessibility from '@lucide/svelte/icons/accessibility';
+  import MessageSquare from '@lucide/svelte/icons/message-square';
+  import { Switch } from 'bits-ui';
+  import { preferences, setPreference } from '$lib/preferences.svelte';
   import Search from '@lucide/svelte/icons/search';
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import Settings from '@lucide/svelte/icons/settings';
@@ -12,6 +22,9 @@
   import * as Command from '$lib/components/ui/command/index.js';
   import { PaneGroup, Pane, PaneResizer } from 'paneforge';
   import NoteForm from '$lib/NoteForm.svelte';
+{% if enable_schema_forms %}
+  import SchemaNoteForm from '$lib/SchemaNoteForm.svelte';
+{% endif %}
   import NotesTable from '$lib/NotesTable.svelte';
   import Diagnostics from '$lib/Diagnostics.svelte';
   import { api, type Health, type Note } from '$lib/api';
@@ -21,7 +34,10 @@
   import Terminal from '$lib/Terminal.svelte';
 {% endif %}
 
+  const themeIcons = { dark: Moon, light: Sun, oled: Monitor, 'solarized-light': Sunset, 'solarized-dark': MoonStar };
   let theme = $state<Theme>(currentTheme());
+  const switchClass = 'inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-input bg-input p-0.5 transition-colors data-[state=checked]:bg-primary focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50';
+  const thumbClass = 'block size-5 rounded-full bg-background shadow transition-transform data-[state=checked]:translate-x-5';
   let palette = $state(false);
   let page = $state<'workspace' | 'settings' | 'diagnostics'>('workspace');
   let notes = $state<Note[]>([]);
@@ -139,6 +155,9 @@
             </Pane>
           </PaneGroup>
         </section>
+{% if enable_schema_forms %}
+        <SchemaNoteForm onSave={add} />
+{% endif %}
 {% if enable_terminal %}
         <Terminal />
 {% endif %}
@@ -156,11 +175,32 @@
           </div>
         </section>
         <section class="rounded-lg border bg-card p-5">
-          <h2 class="text-lg font-semibold">Notifications</h2>
-          <p class="mb-4 text-sm text-muted-foreground">Enable optional system notifications for this browser.</p>
-          <div class="flex flex-wrap gap-2">
-            <Button variant="outline" onclick={requestNotifications}>Enable desktop notifications</Button>
-            <Button variant="outline" onclick={() => notify('Notification test', true)}>Test notification</Button>
+          <h2 class="flex items-center gap-2 text-lg font-semibold"><Bell class="size-5" aria-hidden="true" /> Notifications</h2>
+          <p class="mb-4 text-sm text-muted-foreground">Control which notifications this browser displays.</p>
+          <div class="flex items-center justify-between gap-4 border-b py-4">
+            <div>
+              <label for="success-toasts" class="flex items-center gap-2 font-medium"><MessageSquare class="size-4" aria-hidden="true" /> Success notifications</label>
+              <p id="success-description" class="mt-1 text-sm text-muted-foreground">Show a toast when an operation succeeds. Errors always remain visible.</p>
+            </div>
+            <Switch.Root id="success-toasts" aria-describedby="success-description" checked={preferences.successToasts} onCheckedChange={(value) => setPreference('successToasts', value)} class={switchClass}><Switch.Thumb class={thumbClass} /></Switch.Root>
+          </div>
+          <div class="flex items-center justify-between gap-4 py-4">
+            <div>
+              <label for="desktop-notifications" class="flex items-center gap-2 font-medium"><Monitor class="size-4" aria-hidden="true" /> Desktop notifications</label>
+              <p id="desktop-description" class="mt-1 text-sm text-muted-foreground">Allow browser notifications while the application is open, subject to browser permission.</p>
+            </div>
+            <Switch.Root id="desktop-notifications" aria-describedby="desktop-description" checked={preferences.desktopNotifications} onCheckedChange={(value) => value ? void requestNotifications() : setPreference('desktopNotifications', false)} class={switchClass}><Switch.Thumb class={thumbClass} /></Switch.Root>
+          </div>
+          <Button variant="outline" onclick={() => { toast.success('Notification test'); if (preferences.desktopNotifications && 'Notification' in window && Notification.permission === 'granted') new Notification('Notification test'); }}><Bell class="size-4" aria-hidden="true" /> Test notification</Button>
+        </section>
+        <section class="rounded-lg border bg-card p-5">
+          <h2 class="flex items-center gap-2 text-lg font-semibold"><Accessibility class="size-5" aria-hidden="true" /> Accessibility</h2>
+          <div class="flex items-center justify-between gap-4 pt-4">
+            <div>
+              <label for="reduced-motion" class="font-medium">Reduce motion</label>
+              <p id="motion-description" class="mt-1 text-sm text-muted-foreground">Minimize transitions, animations and smooth scrolling.</p>
+            </div>
+            <Switch.Root id="reduced-motion" aria-describedby="motion-description" checked={preferences.reducedMotion} onCheckedChange={(value) => setPreference('reducedMotion', value)} class={switchClass}><Switch.Thumb class={thumbClass} /></Switch.Root>
           </div>
         </section>
       {/if}
@@ -173,15 +213,16 @@
   <Command.List>
     <Command.Empty>No commands found.</Command.Empty>
     <Command.Group heading="Navigation">
-      <Command.Item value="open overview" onSelect={() => action(() => page = 'workspace')}>Open overview</Command.Item>
-      <Command.Item value="open settings" onSelect={() => action(() => page = 'settings')}>Open settings</Command.Item>
-      <Command.Item value="open diagnostics" onSelect={() => action(() => page = 'diagnostics')}>Open diagnostics</Command.Item>
-      <Command.Item value="refresh data" onSelect={() => action(refresh)}>Refresh data</Command.Item>
-      <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}>Test notification</Command.Item>
+      <Command.Item value="open overview" onSelect={() => action(() => page = 'workspace')}><LayoutDashboard aria-hidden="true" class="size-4 shrink-0" /> Open overview</Command.Item>
+      <Command.Item value="open settings" onSelect={() => action(() => page = 'settings')}><Settings aria-hidden="true" class="size-4 shrink-0" /> Open settings</Command.Item>
+      <Command.Item value="open diagnostics" onSelect={() => action(() => page = 'diagnostics')}><Activity aria-hidden="true" class="size-4 shrink-0" /> Open diagnostics</Command.Item>
+      <Command.Item value="refresh data" onSelect={() => action(refresh)}><RefreshCw aria-hidden="true" class="size-4 shrink-0" /> Refresh data</Command.Item>
+      <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}><Bell aria-hidden="true" class="size-4 shrink-0" /> Test notification</Command.Item>
     </Command.Group>
     <Command.Group heading="Appearance">
       {#each themes as option (option.id)}
-        <Command.Item value={'theme ' + option.label} onSelect={() => action(() => setTheme(option.id))}>Theme: {option.label}</Command.Item>
+        {@const Icon = themeIcons[option.id]}
+        <Command.Item value={'theme ' + option.label} onSelect={() => action(() => setTheme(option.id))}><Icon aria-hidden="true" class="size-4 shrink-0" /> Theme: {option.label}</Command.Item>
       {/each}
     </Command.Group>
   </Command.List>

@@ -37,7 +37,7 @@ task check, task fix, task test, task test:e2e, task build. Install Chromium usi
 
 ## Reusable UI
 
-SvelteKit is configured as a static SPA (SSR disabled), solely for supported Formsnap/Superforms integration. FastAPI remains the sole application backend. Build output remains frontend/dist. The example notes screen includes TanStack sorting, filtering, pagination, PaneForge resizable/persistent layout, and Zod/Formsnap validation. The diagnostics screen uses psutil host and process metrics.
+Standalone Svelte 5 + Vite builds a static SPA; FastAPI is the sole application backend. Build output remains frontend/dist. The example notes screen includes TanStack sorting, filtering, pagination, PaneForge resizable/persistent layout, and Zod/TanStack Form validation. The diagnostics screen uses psutil host and process metrics.
 {% if enable_events %}
 
 ## Live updates
@@ -52,3 +52,8 @@ Run task screenshots after installing Chromium. The Playwright capture suite sav
 ## API contract and frontend checks
 
 Run task api:generate whenever Python API models or routes change. It exports FastAPI's OpenAPI schema without starting a server, then generates frontend/src/lib/generated/api.d.ts using openapi-typescript. Commit the generated declarations; frontend/openapi.json is a disposable intermediate. Use openapi-fetch via src/lib/api.ts. Never hand-edit generated types. task api:check detects stale declarations; task check runs it along with ESLint, Prettier and svelte-check. task fix applies Ruff, ESLint and Prettier fixes. Setup normalizes the initial frontend formatting; CI validates the generated baseline. Generated declarations and vendored shadcn registry files are excluded from application lint/format rules but are included in type checking and builds.
+
+Settings include persistent accessible switches for success notifications, desktop notifications and reduced motion. Command and context menus include leading icons and retain accessible text labels.
+{% if enable_schema_forms %}
+The optional schema-generated note form uses SJSF and AJV with the NoteInput schema from generated OpenAPI JSON. The ordinary note form uses TanStack Form; both save to the same API.
+{% endif %}

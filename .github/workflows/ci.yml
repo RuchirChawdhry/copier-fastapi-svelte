@@ -32,6 +32,7 @@ jobs:
           node-version-file: generated/frontend/.node-version
           package-manager-cache: false
       - name: Install dependencies
+        id: install
         working-directory: generated
         run: |
           npm install -g corepack
@@ -51,6 +52,7 @@ jobs:
           uv run pytest -q --benchmark-disable --junitxml=backend.xml
           uv build
       - name: Frontend typecheck and build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: generated/frontend
         run: |
           pnpm check

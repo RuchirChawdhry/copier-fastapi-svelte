@@ -7,18 +7,18 @@ from fastapi import FastAPI, HTTPException, Request, Response
 {% else %}
 from fastapi import FastAPI, HTTPException, Response
 {% endif %}
-
 from pydantic import BaseModel, Field
 {% if enable_jobs %}
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 from taskiq.exceptions import SendTaskError
-
-from .jobs import broker, save_note
 {% endif %}
 
 from .config import get_settings
 from .db import Database
+{% if enable_jobs %}
+from .jobs import broker, save_note
+{% endif %}
 from .mcp import create_mcp
 
 settings = get_settings()

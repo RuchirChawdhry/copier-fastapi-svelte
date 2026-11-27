@@ -14,7 +14,7 @@ task dev
 
 Open http://127.0.0.1:5173. API health: http://127.0.0.1:8000/api/health.
 
-Official shadcn-svelte components are vendored in frontend/src/lib/components/ui. Run `task ui:add -- button dialog` to add registry components. Commit uv/pnpm lockfiles after setup.
+Official shadcn-svelte components are vendored in frontend/src/lib/components/ui. Run `task ui:add -- button dialog` to add registry components. Versioned releases include matching uv/pnpm lockfiles. Commit both after generation or intentional dependency changes.
 
 ## Production and tailnet
 
@@ -107,3 +107,7 @@ Use app.ntfy.notify(message, title) from synchronous services or a worker; from 
 - `src/lib/settings/`: appearance, notifications and accessibility sections.
 - `src/lib/features/notes/`: forms, table, date filtering, note details and the shared workspace query controller; optional schema form is generated only when selected.
 - `src/lib/components/ui/`: reusable shadcn-svelte primitives.
+
+## Dependency reproducibility
+
+`task install` uses `uv sync --locked` and `pnpm install --frozen-lockfile`. Normal Python tasks use `uv run --locked`. `task deps:check` checks both locks. `task setup` bootstraps missing locks for an unreleased main copy, then installs from those locks. Published release templates already include both lockfiles. Run `task deps:lock` only to intentionally resolve manifest changes; commit the resulting locks. Python distribution builds check the project lock first; isolated build-system dependencies are not part of this guarantee.

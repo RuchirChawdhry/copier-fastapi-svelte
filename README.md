@@ -3,7 +3,7 @@
 Agent-ready Copier starter: FastAPI, Svelte 5, TypeScript, Vite, Tailwind, shadcn-svelte, SQLite WAL, Caddy and optional FastMCP. Standalone Svelte 5 + Vite builds a static SPA; FastAPI is the only application backend.
 
 ```sh
-uvx --from copier copier copy gh:RuchirChawdhry/copier-fastapi-svelte my-app
+uvx --from copier==9.14.1 copier copy gh:RuchirChawdhry/copier-fastapi-svelte my-app
 cd my-app
 task setup
 task dev
@@ -23,3 +23,17 @@ Optional RSS publishing uses feedgenerator and exposes /feed.rss with automatic 
 Go Task is the development command interface, including template rendering, validation, screenshots and benchmarks. Run `task --list-all` in the template or generated project. GitHub Actions delegates development commands to the same Taskfiles.
 
 Run `task doctor` or `task doctor:json` inside generated projects. The template preflight renders and lints every feature combination before the full validation matrix.
+
+## Versioned releases and dependency freezing
+
+Use the latest published semantic version tag, or select an explicit tag:
+
+```sh
+uvx --from copier==9.14.1 copier copy --vcs-ref=v0.1.0 gh:RuchirChawdhry/copier-fastapi-svelte my-app
+cd my-app
+task setup
+```
+
+The example tag is available once the first release is published. The manually dispatched **Versioned Copier release** workflow creates a release-only commit containing 32 backend and two frontend lockfile profiles, validates the rendered locks and minimal/full applications, and publishes a semantic version tag only after success. It does not modify main. Each generated project receives just its matching uv.lock and frontend/pnpm-lock.yaml. Use `--vcs-ref=main` for unreleased development copies; `task deps:bootstrap` creates missing locks there before frozen installation. Commit both generated locks. Use `task deps:lock` or the dependency add/remove tasks for intentional changes; normal install and runtime commands reject stale Python locks and frozen pnpm install rejects stale frontend locks.
+
+For updates, commit local work, then run `uvx --from copier==9.14.1 copier update --vcs-ref=v0.2.0` from the generated project (substitute a published tag). Inspect merge conflicts and lockfile changes, then run `task deps:check`, `task install` and `task check`.

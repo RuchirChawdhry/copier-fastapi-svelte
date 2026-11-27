@@ -27,6 +27,14 @@ tasks:
       - task: render
         vars:
           CLI_ARGS: "--defaults -d 'project_name=Example Workspace' -d enable_events=true -d enable_schema_forms=true -d enable_rss=true . generated"
+  release:locks:
+    desc: Generate release lockfile templates from the committed source
+    cmds:
+      - uv run --no-project --with copier==9.14.1 python scripts/release_locks.py generate
+  release:verify-locks:
+    desc: Verify rendered release lockfiles for all dependency profiles
+    cmds:
+      - uv run --no-project --with copier==9.14.1 python scripts/release_locks.py verify
   benchmark:
     desc: Compare historical and current frontend performance (Linux)
     cmds:

@@ -11,6 +11,7 @@ for entry in 'SvelteKit + Superforms|366e3a8b6107c7338207ec1209c2e9618c39dcbd|be
   uvx --from copier==9.14.1 copier copy --defaults --vcs-ref="$revision" . "$dest"
   (
     cd "$dest"
+    if task --list-all | grep -q 'deps:bootstrap'; then task deps:bootstrap; fi
     CI=false task install
     cd frontend
     pnpm exec playwright install chromium

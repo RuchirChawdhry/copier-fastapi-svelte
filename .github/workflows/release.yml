@@ -1,0 +1,88 @@
+name: Versioned Copier release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New semantic version tag (vMAJOR.MINOR.PATCH)"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: copier-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e
+        with:
+          version: 3.x
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: template/frontend/.node-version
+          package-manager-cache: false
+      - name: Validate new release version
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            echo "Tag already exists: $RELEASE_TAG" >&2
+            exit 1
+          fi
+      - name: Generate all dependency profile locks
+        run: |
+          task tools:setup
+          task release:locks
+      - name: Create release-only snapshot commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add template release-locks.json
+          git commit -m "Freeze Copier dependency profiles for $RELEASE_TAG"
+      - name: Verify all 128 render combinations and dependency profiles
+        run: |
+          task test
+          task release:verify-locks
+      - name: Validate minimal locked application
+        run: |
+          task render -- --defaults . generated
+          cd generated
+          task install
+          task ui:format
+          task check
+          task test:ci
+          task build
+          task browser:install
+          task test:e2e:ci
+          git diff --exit-code -- uv.lock frontend/pnpm-lock.yaml
+      - name: Validate fully enabled locked application
+        run: |
+          task render -- --defaults -d enable_jobs=true -d enable_events=true -d enable_mcp=true -d enable_rss=true -d enable_ntfy=true -d enable_schema_forms=true -d enable_terminal=true . generated-full
+          cd generated-full
+          task install
+          task ui:format
+          task jobs:redis
+          task check
+          task test:ci
+          task build
+          task browser:install
+          task test:e2e:ci
+      - name: Publish immutable version tag and GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git tag "$RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" --verify-tag --generate-notes --title "$RELEASE_TAG"

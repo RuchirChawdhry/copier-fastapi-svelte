@@ -21,22 +21,57 @@ tasks:
       - task: doctor
         vars:
           CLI_ARGS: --json
+  deps:bootstrap:
+    desc: Create missing lockfiles only (unreleased development copies)
+    cmds:
+      - task: api:lock:missing
+      - task: ui:lock:missing
+  api:lock:missing:
+    status:
+      - test -f uv.lock
+    cmds:
+      - uv lock
+  ui:lock:missing:
+    dir: frontend
+    status:
+      - test -f pnpm-lock.yaml
+    cmds:
+      - pnpm install --lockfile-only --no-frozen-lockfile
+  deps:lock:
+    desc: Explicitly resolve lockfiles after dependency manifest changes
+    cmds:
+      - uv lock
+      - task: ui:lock
+  ui:lock:
+    dir: frontend
+    cmds:
+      - pnpm install --lockfile-only --no-frozen-lockfile
+  deps:check:
+    desc: Verify both dependency lockfiles without updating them
+    cmds:
+      - uv lock --check
+      - task: ui:lock:check
+  ui:lock:check:
+    dir: frontend
+    cmds:
+      - pnpm install --lockfile-only --frozen-lockfile
   install:
-    desc: Install backend and frontend dependencies
+    desc: Install backend and frontend dependencies from existing lockfiles
     cmds:
       - task: api:install
       - task: ui:install
       - task: api:generate
   api:install:
     cmds:
-      - uv sync
+      - uv sync --locked
   ui:install:
     dir: frontend
     cmds:
-      - pnpm install --no-frozen-lockfile
+      - pnpm install --frozen-lockfile
   setup:
-    desc: Install dependencies and initialize database
+    desc: Bootstrap missing locks, install locked dependencies and initialize database
     cmds:
+      - task: deps:bootstrap
       - task: install
       - task: db:init
       - task: ui:format
@@ -45,17 +80,17 @@ tasks:
   db:init:
     desc: Initialize SQLite database
     cmds:
-      - uv run python -m app.cli init-db
+      - uv run --locked python -m app.cli init-db
   hooks:install:
     desc: Install pre-commit hooks in Git projects
     status:
-      - uv run python -c "from pathlib import Path; import sys; sys.exit(0 if not Path('.git').exists() else 1)"
+      - uv run --locked python -c "from pathlib import Path; import sys; sys.exit(0 if not Path('.git').exists() else 1)"
     cmds:
-      - uv run pre-commit install
+      - uv run --locked pre-commit install
   api:generate:
     desc: Export FastAPI OpenAPI and regenerate typed frontend client
     cmds:
-      - uv run python -m app.cli openapi
+      - uv run --locked python -m app.cli openapi
       - task: ui:api:generate
   ui:api:generate:
     dir: frontend
@@ -64,7 +99,7 @@ tasks:
   api:check:
     desc: Fail if generated TypeScript API types are stale
     cmds:
-      - uv run python -m app.cli openapi
+      - uv run --locked python -m app.cli openapi
       - task: ui:api:check
   ui:api:check:
     dir: frontend
@@ -77,7 +112,7 @@ tasks:
       - task --parallel api:dev ui:dev
   api:dev:
     cmds:
-      - uv run python -m app.cli serve --reload
+      - uv run --locked python -m app.cli serve --reload
   ui:dev:
     dir: frontend
     cmds:
@@ -91,6 +126,7 @@ tasks:
   api:build:
     desc: Build Python wheel and source distribution
     cmds:
+      - uv lock --check
       - uv build
   ui:build:
     dir: frontend
@@ -110,7 +146,7 @@ tasks:
       - task --parallel api:serve proxy
   api:serve:
     cmds:
-      - uv run python -m app.cli serve
+      - uv run --locked python -m app.cli serve
   proxy:
     cmds:
       - caddy run --config Caddyfile --adapter caddyfile
@@ -121,7 +157,7 @@ tasks:
   test:
     desc: Run backend tests (optional pytest arguments after --)
     cmds:
-      - uv run pytest -q {% raw %}{{.CLI_ARGS}}{% endraw +%}
+      - uv run --locked pytest -q {% raw %}{{.CLI_ARGS}}{% endraw +%}
   test:all:
     desc: Run backend and browser tests
     cmds:
@@ -130,11 +166,11 @@ tasks:
   test:ci:
     desc: Backend tests with JUnit report
     cmds:
-      - uv run pytest -q --benchmark-disable --junitxml=backend.xml
+      - uv run --locked pytest -q --benchmark-disable --junitxml=backend.xml
   benchmark:
     desc: Run backend performance benchmarks
     cmds:
-      - uv run pytest -q --benchmark-only {% raw %}{{.CLI_ARGS}}{% endraw +%}
+      - uv run --locked pytest -q --benchmark-only {% raw %}{{.CLI_ARGS}}{% endraw +%}
   browser:install:
     desc: Install Chromium for Playwright
     dir: frontend
@@ -169,8 +205,8 @@ tasks:
       - task: ui:check
   api:check-code:
     cmds:
-      - uv run ruff check app tests scripts
-      - uv run ty check app
+      - uv run --locked ruff check app tests scripts
+      - uv run --locked ty check app
   ui:check:
     dir: frontend
     cmds:
@@ -179,8 +215,8 @@ tasks:
       - pnpm check
   fix:
     cmds:
-      - uv run ruff check --fix app tests scripts
-      - uv run ruff format app tests scripts
+      - uv run --locked ruff check --fix app tests scripts
+      - uv run --locked ruff format app tests scripts
       - task: api:generate
       - task: ui:fix
   ui:fix:
@@ -214,19 +250,19 @@ tasks:
   hooks:check:
     desc: Run pre-commit against all tracked files
     cmds:
-      - uv run pre-commit run --all-files
+      - uv run --locked pre-commit run --all-files
   hooks:ruff:
     cmds:
-      - uv run ruff check --fix {% raw %}{{.CLI_ARGS}}{% endraw +%}
+      - uv run --locked ruff check --fix {% raw %}{{.CLI_ARGS}}{% endraw +%}
   hooks:ruff-format:
     cmds:
-      - uv run ruff format {% raw %}{{.CLI_ARGS}}{% endraw +%}
+      - uv run --locked ruff format {% raw %}{{.CLI_ARGS}}{% endraw +%}
   hooks:eslint:
     cmds:
-      - uv run python scripts/frontend_hook.py eslint {% raw %}{{.CLI_ARGS}}{% endraw +%}
+      - uv run --locked python scripts/frontend_hook.py eslint {% raw %}{{.CLI_ARGS}}{% endraw +%}
   hooks:prettier:
     cmds:
-      - uv run python scripts/frontend_hook.py prettier {% raw %}{{.CLI_ARGS}}{% endraw +%}
+      - uv run --locked python scripts/frontend_hook.py prettier {% raw %}{{.CLI_ARGS}}{% endraw +%}
   ui:format:
     dir: frontend
     cmds:
@@ -235,13 +271,13 @@ tasks:
   ntfy:send:
     desc: Send an explicit push notification (message and optional --title after --)
     cmds:
-      - uv run python -m app.cli send-notification {% raw %}{{.CLI_ARGS}}{% endraw +%}
+      - uv run --locked python -m app.cli send-notification {% raw %}{{.CLI_ARGS}}{% endraw +%}
 {% endif %}
 {% if enable_rss %}
   rss:publish:
     desc: Publish an RSS announcement (title, description and optional --link after --)
     cmds:
-      - uv run python -m app.cli publish-feed {% raw %}{{.CLI_ARGS}}{% endraw +%}
+      - uv run --locked python -m app.cli publish-feed {% raw %}{{.CLI_ARGS}}{% endraw +%}
 {% endif %}
 {% if enable_jobs %}
   jobs:redis:
@@ -253,7 +289,7 @@ tasks:
       - docker compose stop redis
   jobs:worker:
     cmds:
-      - uv run taskiq worker app.jobs:broker --workers 1
+      - uv run --locked taskiq worker app.jobs:broker --workers 1
 {% endif %}
 {% if enable_terminal %}
   terminal:

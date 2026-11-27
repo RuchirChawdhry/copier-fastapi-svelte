@@ -73,5 +73,15 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert (tmp_path / "scripts/doctor.py").is_file()
     assert ("httpx" in tomllib.loads(dependencies)["project"]["dependencies"]) == ntfy
     json.loads(frontend)
+    assert "uvicorn[standard]" in tomllib.loads(dependencies)["project"]["dependencies"]
+    assert "uv sync --locked" in taskfile
+    assert "pnpm install --frozen-lockfile" in taskfile
+    assert "deps:check:" in taskfile
+    if (ROOT / "release-locks.json").is_file():
+        assert (tmp_path / "uv.lock").is_file()
+        assert (tmp_path / "frontend/pnpm-lock.yaml").is_file()
+        assert any(package["name"] == "example-app" for package in tomllib.loads(
+            (tmp_path / "uv.lock").read_text()
+        )["package"])
     subprocess.run(["task", "--list-all"], cwd=tmp_path, check=True)
     subprocess.run(["ruff", "check", "app", "tests", "scripts"], cwd=tmp_path, check=True)

@@ -96,6 +96,7 @@ jobs:
         working-directory: generated
         run: |
           task -d .. tools:setup
+          task deps:bootstrap
           task install
           task ui:format
       - name: Start Redis

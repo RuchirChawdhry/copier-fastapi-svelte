@@ -35,6 +35,7 @@ jobs:
         working-directory: generated
         run: |
           task -d .. tools:setup
+          task deps:bootstrap
           task install
           task browser:install
       - name: Capture screenshots

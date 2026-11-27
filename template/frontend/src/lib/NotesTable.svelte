@@ -25,7 +25,7 @@
   });
 </script>
 
-<input aria-label="Filter notes" placeholder="Filter notes…" value={table.getState().globalFilter ?? ''} oninput={(event) => table.setGlobalFilter(event.currentTarget.value)} class="mb-3 w-full rounded-md border bg-background px-3 py-2 text-sm" />
+<input aria-label="Filter notes" placeholder="Filter notes…" value={table.atoms.globalFilter.get() ?? ''} oninput={(event) => table.setGlobalFilter(event.currentTarget.value)} class="mb-3 w-full rounded-md border bg-background px-3 py-2 text-sm" />
 <div class="overflow-x-auto rounded-md border">
   <table class="w-full text-left text-sm">
     <thead class="bg-muted text-muted-foreground">
@@ -65,7 +65,7 @@
   </table>
 </div>
 <div class="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-  <span>{table.getPrePaginationRowModel().rows.length} notes · Page {table.getState().pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}</span>
+  <span>{table.getPrePaginatedRowModel().rows.length} notes · Page {table.atoms.pagination.get().pageIndex + 1} of {Math.max(1, table.getPageCount())}</span>
   <div class="flex gap-1">
     <Button size="sm" variant="outline" disabled={!table.getCanPreviousPage()} onclick={() => table.previousPage()}>Previous</Button>
     <Button size="sm" variant="outline" disabled={!table.getCanNextPage()} onclick={() => table.nextPage()}>Next</Button>

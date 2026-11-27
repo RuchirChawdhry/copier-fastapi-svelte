@@ -9,6 +9,8 @@ async function capture(page: Page, name: string) {
 }
 
 test('capture application screens', async ({ page, request }) => {
+  page.on('pageerror', error => console.error('Browser page error:', error));
+  page.on('console', message => { if (message.type() === 'error') console.error(message.text()); });
   await mkdir(output, { recursive: true });
   for (const note of await (await request.get('/api/notes')).json()) {
     await request.delete('/api/notes/' + note.id);
@@ -17,8 +19,9 @@ test('capture application screens', async ({ page, request }) => {
     expect((await request.post('/api/notes', { data: { text } })).ok()).toBeTruthy();
   }
   await page.goto('/');
-  await expect(page.getByText('Review project requirements')).toBeVisible();
-  await page.getByText('Review project requirements').click();
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('button', { name: 'Review project requirements', exact: true })).toBeVisible({ timeout: 20000 });
+  await page.getByRole('button', { name: 'Review project requirements', exact: true }).click();
   await capture(page, '01-overview-dark');
   await page.getByText('Prepare API contract').click({ button: 'right' });
   await expect(page.getByRole('menuitem', { name: 'Copy note' })).toBeVisible();

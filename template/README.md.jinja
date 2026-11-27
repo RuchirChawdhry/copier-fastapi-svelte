@@ -57,3 +57,7 @@ Settings include persistent accessible switches for success notifications, deskt
 {% if enable_schema_forms %}
 The optional schema-generated note form uses SJSF and AJV with the NoteInput schema from generated OpenAPI JSON. The ordinary note form uses TanStack Form; both save to the same API.
 {% endif %}
+
+## Server state
+
+TanStack Query owns API response caching, loading/error state, note mutations and cache invalidation. SSE updates the same notes cache when enabled. Do not duplicate API server state in local component state. Diagnostics and health have a short five-second freshness window; other queries default to 30 seconds. Refresh explicitly re-fetches data.

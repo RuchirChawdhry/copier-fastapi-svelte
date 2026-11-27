@@ -19,3 +19,5 @@
 - Run task fix and task check before committing. ESLint handles Svelte/TypeScript; Prettier owns formatting. Do not disable lint rules to pass CI.
 
 - Add left-aligned semantic icons to command and context menu items, preserving visible labels and keyboard navigation. Use accessible switches with persistent settings. Keep SJSF conditional in Copier.
+
+- Use TanStack Query for server state; define reusable query options in src/lib/queries.ts, invalidate relevant keys after mutations, and update the same cache from SSE. Keep local state for UI only.

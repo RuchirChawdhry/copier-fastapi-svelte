@@ -47,3 +47,19 @@ test('notes, context menu, command palette and five persisted themes', async ({ 
   await expect(page.getByText('API process RAM (RSS)')).toBeVisible();
 });
 
+
+test('diagnostics cache is reused on immediate navigation', async ({ page }) => {
+  let requests = 0;
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/diagnostics') requests++;
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Diagnostics' }).click();
+  await expect(page.getByText('API process RAM (RSS)')).toBeVisible();
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await page.getByRole('button', { name: 'Diagnostics' }).click();
+  await expect(page.getByText('API process RAM (RSS)')).toBeVisible();
+  expect(requests).toBe(1);
+  await page.getByRole('button', { name: 'Refresh metrics' }).click();
+  await expect.poll(() => requests).toBe(2);
+});

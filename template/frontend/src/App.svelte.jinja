@@ -1,5 +1,9 @@
 <script lang="ts">
+{% if enable_events %}
   import { onMount } from 'svelte';
+{% endif %}
+  import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
+  import { notesOptions, healthOptions } from '$lib/queries';
   import { Toaster, toast } from 'svelte-sonner';
   import Bell from '@lucide/svelte/icons/bell';
   import Sun from '@lucide/svelte/icons/sun';
@@ -27,7 +31,7 @@
 {% endif %}
   import NotesTable from '$lib/NotesTable.svelte';
   import Diagnostics from '$lib/Diagnostics.svelte';
-  import { api, type Health, type Note } from '$lib/api';
+  import { api{% if enable_events %}, type Note{% endif %} } from '$lib/api';
   import { themes, applyTheme, currentTheme, type Theme } from '$lib/theme';
   import { notify, requestNotifications } from '$lib/notifications';
 {% if enable_terminal %}
@@ -40,8 +44,25 @@
   const thumbClass = 'block size-5 rounded-full bg-background shadow transition-transform data-[state=checked]:translate-x-5';
   let palette = $state(false);
   let page = $state<'workspace' | 'settings' | 'diagnostics'>('workspace');
-  let notes = $state<Note[]>([]);
-  let health = $state<Health | null>(null);
+  const queryClient = useQueryClient();
+  const notesQuery = createQuery(() => notesOptions);
+  const healthQuery = createQuery(() => healthOptions);
+  const notes = $derived(notesQuery.data ?? []);
+  const health = $derived(healthQuery.data);
+  const addMutation = createMutation(() => ({
+    mutationFn: api.add,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
+      notify('Note saved');
+    },
+  }));
+  const removeMutation = createMutation(() => ({
+    mutationFn: api.remove,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: notesOptions.queryKey });
+      notify('Note deleted');
+    },
+  }));
   let selectedId = $state<number | null>(null);
   let selected = $derived(notes.find(note => note.id === selectedId));
   let dark = $derived(!['light', 'solarized-light'].includes(theme));
@@ -64,44 +85,35 @@
   }
 
   async function refresh() {
-    try {
-      [notes, health] = await Promise.all([api.notes(), api.health()]);
-    } catch (error) {
-      toast.error(String(error));
-    }
+    await Promise.all([notesQuery.refetch(), healthQuery.refetch()]);
   }
 
   async function add(text: string) {
-    const saved = await api.add(text);
-    notes = [...notes.filter(note => note.id !== saved.id), saved];
-    notify('Note saved');
+    await addMutation.mutateAsync(text);
   }
 
   async function remove(id: number) {
     try {
-      await api.remove(id);
-      notes = notes.filter((note) => note.id !== id);
-      notify('Note deleted');
+      await removeMutation.mutateAsync(id);
     } catch (error) {
       toast.error(String(error));
     }
   }
 
-  onMount(() => {
-    void refresh();
 {% if enable_events %}
+  onMount(() => {
     const stream = new EventSource('/api/events');
     let initialized = false;
     stream.addEventListener('notes', (event: MessageEvent<string>) => {
       const incoming: Note[] = JSON.parse(event.data);
       const changed = JSON.stringify(incoming) !== JSON.stringify(notes);
-      notes = incoming;
+      if (changed) queryClient.setQueryData(notesOptions.queryKey, incoming);
       if (initialized && changed) notify('Notes updated', true);
       initialized = true;
     });
     return () => stream.close();
-{% endif %}
   });
+{% endif %}
 </script>
 
 <svelte:window onkeydown={keyboard} />
@@ -126,7 +138,7 @@
       {#if page === 'workspace'}
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div><p class="text-xs font-medium uppercase tracking-widest text-muted-foreground">Application</p><h1 class="mt-1 text-3xl font-semibold tracking-tight">Overview</h1></div>
-          <Button variant="outline" onclick={refresh}><RefreshCw class="size-4" /> Refresh</Button>
+          <Button variant="outline" onclick={refresh} disabled={notesQuery.isFetching || healthQuery.isFetching}><RefreshCw class="size-4" /> Refresh</Button>
         </div>
         <div class="grid gap-3 sm:grid-cols-3">
           <div class="rounded-lg border bg-card p-5"><p class="flex items-center gap-2 text-sm text-muted-foreground"><Activity class="size-4" /> API readiness</p><p class="mt-2 text-xl font-semibold">{health?.status ?? 'Unknown'}</p></div>
@@ -137,6 +149,11 @@
           <h2 class="text-lg font-semibold">Notes</h2>
           <p class="mb-5 text-sm text-muted-foreground">A working example of API, persistence and context menus.</p>
           <NoteForm onSave={add} />
+          {#if notesQuery.isError}
+            <p role="alert" class="mb-3 text-sm text-destructive">{notesQuery.error.message}</p>
+          {:else if notesQuery.isPending}
+            <p role="status" class="mb-3 text-sm text-muted-foreground">Loading notes…</p>
+          {/if}
           <PaneGroup direction="horizontal" autoSaveId="notes-layout">
             <Pane defaultSize={70} minSize={40}>
               <div class="pr-3"><NotesTable {notes} onRemove={remove} onSelect={(note) => selectedId = note.id} /></div>

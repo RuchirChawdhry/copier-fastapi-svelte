@@ -3,7 +3,7 @@ name = {{ project_slug | tojson }}
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
-  "fastapi", "uvicorn[standard]", "cyclopts", "pydantic-settings", "psutil",
+  "fastapi>=0.133.0", "uvicorn[standard]", "cyclopts", "pydantic-settings", "psutil",
 {% if enable_ntfy %}
   "httpx",
 {% endif %}
@@ -11,7 +11,7 @@ dependencies = [
   "feedgenerator>=2.2.1,<3",
 {% endif %}
 {% if enable_mcp %}
-  "fastmcp>=2,<3",
+  "fastmcp==4.2.6",
 {% endif %}
 {% if enable_events %}
   "sse-starlette",
@@ -30,7 +30,7 @@ packages = ["app"]
 [tool.hatch.build.targets.sdist]
 exclude = ["/tools", "/tests/test_dev_mcp.py", "/frontend/scripts/dev-browser.mjs"]
 [dependency-groups]
-dev = ["fastmcp>=2,<3", "pyyaml", "httpx", "pytest", "pytest-benchmark", "ruff", "ty", "pre-commit"]
+dev = ["fastmcp==4.2.6", "pyyaml", "httpx", "pytest", "pytest-benchmark", "ruff", "ty", "pre-commit"]
 [tool.ruff]
 target-version = "py314"
 line-length = 100

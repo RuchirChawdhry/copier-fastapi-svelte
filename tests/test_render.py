@@ -45,8 +45,8 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert (tmp_path / "app/events.py").exists() == events
     assert ("sse-starlette" in dependencies) == events
     manifest = tomllib.loads(dependencies)
-    assert ("fastmcp>=2,<3" in manifest["project"]["dependencies"]) == mcp
-    assert "fastmcp>=2,<3" in manifest["dependency-groups"]["dev"]
+    assert ("fastmcp==4.2.6" in manifest["project"]["dependencies"]) == mcp
+    assert "fastmcp==4.2.6" in manifest["dependency-groups"]["dev"]
     assert manifest["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["app"]
     assert "/tools" in manifest["tool"]["hatch"]["build"]["targets"]["sdist"]["exclude"]
     assert (tmp_path / "tools/dev_mcp/server.py").is_file()

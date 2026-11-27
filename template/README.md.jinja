@@ -115,3 +115,5 @@ Use app.ntfy.notify(message, title) from synchronous services or a worker; from 
 ## Development MCP
 
 Always included as a separate local stdio FastMCP server. Run `task mcp:dev:inspect` to discover tools, `task mcp:dev:check` to test them, and configure your agent to run `uv run --locked python -m tools.dev_mcp` in the project directory. See [development MCP setup and examples](docs/development-mcp.md). The optional application MCP remains separate and is the only MCP exposed through FastAPI.
+
+Both MCP servers use FastMCP 4.2.6. For intentional upgrades to an existing generated project, regenerate its dependency locks and run `task mcp:dev:check`.

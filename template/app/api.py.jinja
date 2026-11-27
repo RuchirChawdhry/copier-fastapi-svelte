@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
     note_events = NoteEvents(database)
 {% endif %}
 {% if enable_mcp %}
-    mcp_app = create_mcp(database).http_app(path="/")
+    mcp_app = create_mcp(database).http_app(path="/", transport="streamable-http", json_response=True)
 {% endif %}
 
     @asynccontextmanager
@@ -72,7 +72,7 @@ def create_app() -> FastAPI:
             await stack.enter_async_context(note_events.monitor())
 {% endif %}
 {% if enable_mcp %}
-            await stack.enter_async_context(mcp_app.lifespan(app))
+            await stack.enter_async_context(mcp_app.router.lifespan_context(mcp_app))
 {% endif %}
 {% if enable_jobs %}
             if not broker.is_worker_process:

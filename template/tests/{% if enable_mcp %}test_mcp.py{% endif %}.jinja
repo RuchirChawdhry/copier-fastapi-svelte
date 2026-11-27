@@ -1,7 +1,7 @@
-def test_mcp_initialization(client):
+def test_mcp_initialization_and_tool_calls(client):
+    headers = {"Accept": "application/json, text/event-stream", "Host": "127.0.0.1"}
     response = client.post(
-        "/mcp/",
-        headers={"Accept": "application/json, text/event-stream"},
+        "/mcp/", headers=headers,
         json={
             "jsonrpc": "2.0", "id": 1, "method": "initialize",
             "params": {
@@ -12,5 +12,28 @@ def test_mcp_initialization(client):
         },
     )
     assert response.status_code == 200
-    assert "protocolVersion" in response.text
-    assert "serverInfo" in response.text
+    initialized = response.json()["result"]
+    assert initialized["serverInfo"]["name"].endswith("-app")
+    headers["MCP-Protocol-Version"] = initialized["protocolVersion"]
+    if session_id := response.headers.get("Mcp-Session-Id"):
+        headers["Mcp-Session-Id"] = session_id
+    response = client.post(
+        "/mcp/", headers=headers,
+        json={"jsonrpc": "2.0", "method": "notifications/initialized"},
+    )
+    assert response.status_code in {200, 202, 204}
+    response = client.post(
+        "/mcp/", headers=headers,
+        json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+    )
+    assert response.status_code == 200
+    assert {tool["name"] for tool in response.json()["result"]["tools"]} == {"list_notes"}
+    response = client.post(
+        "/mcp/", headers=headers,
+        json={"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+              "params": {"name": "list_notes", "arguments": {}}},
+    )
+    assert response.status_code == 200
+    result = response.json()["result"]
+    assert not result.get("isError", False)
+    assert result["content"]

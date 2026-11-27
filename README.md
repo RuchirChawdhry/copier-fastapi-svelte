@@ -43,3 +43,5 @@ CI caches the uv package cache, the pnpm content-addressed store, and Chromium b
 Showcase screenshots run against the actual frontend with deterministic Playwright API fixtures, not a live backend or database. Ordinary integration tests still exercise SQLite and FastAPI.
 
 Every generated project includes a local development-only FastMCP server for context, doctor, OpenAPI, browser inspection, accessibility, SQLite schema and verification. Application MCP is independently optional. See the generated docs/development-mcp.md for setup and tools.
+
+Both MCP servers use FastMCP 4.2.6 (MCP SDK v2), with legacy and modern negotiation covered by development MCP tests.

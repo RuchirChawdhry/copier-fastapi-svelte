@@ -1,10 +1,13 @@
 import asyncio
 import json
 import sqlite3
+import sys
 from pathlib import Path
 
 import pytest
 from fastmcp import Client
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
 from tools.dev_mcp import database, verification
 from tools.dev_mcp.project import inspect_endpoint, project_context
@@ -27,6 +30,23 @@ def test_mcp_registration_and_calls():
             assert "Note" in json.dumps(result.content[0].model_dump())
 
     asyncio.run(check())
+
+
+def test_stdio_protocol():
+    async def check():
+        params = StdioServerParameters(
+            command=sys.executable, args=["-m", "tools.dev_mcp"],
+            cwd=str(Path(__file__).resolve().parents[1]),
+        )
+        async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
+            initialized = await session.initialize()
+            assert initialized.serverInfo.name.endswith("-dev")
+            tools = await session.list_tools()
+            assert "project_context" in {tool.name for tool in tools.tools}
+            result = await session.call_tool("project_context", {})
+            assert not result.isError
+
+    asyncio.run(asyncio.wait_for(check(), timeout=30))
 
 
 def test_contract_inspection():

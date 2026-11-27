@@ -158,10 +158,14 @@ tasks:
   serve:
     desc: Run API and Caddy after building
     cmds:
-      - task --parallel api:serve proxy
+      - task --parallel api:serve:production proxy
   api:serve:
     cmds:
       - uv run --locked python -m app.cli serve
+  api:serve:production:
+    desc: Run the API without development dependencies
+    cmds:
+      - uv run --locked --no-dev python -m app.cli serve
   proxy:
     cmds:
       - caddy run --config Caddyfile --adapter caddyfile

@@ -6,7 +6,7 @@ const origin = 'http://127.0.0.1:5173';
 const errors = [];
 const requests = [];
 const failed = [];
-const safePath = (url) => new URL(url).pathname;
+const safePath = (url) => new URL(url).pathname.slice(0, 500);
 const redact = (text) => text
   .replace(/(bearer\s+)[^\s,;]+/gi, '$1[redacted]')
   .replace(/((?:token|password|secret|api[_-]?key)\s*[:=]\s*)[^\s,;]+/gi, '$1[redacted]')
@@ -30,9 +30,9 @@ try {
   });
   await context.addInitScript((value) => localStorage.setItem('theme', value), theme);
   const page = await context.newPage();
-  page.on('pageerror', (error) => errors.push(redact(error.message)));
+  page.on('pageerror', (error) => { if (errors.length < 50) errors.push(redact(error.message)); });
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(redact(message.text()));
+    if (message.type() === 'error' && errors.length < 50) errors.push(redact(message.text()));
   });
   page.on('response', (response) => {
     const entry = { method: response.request().method(), path: safePath(response.url()), status: response.status() };
@@ -42,11 +42,14 @@ try {
   page.on('requestfailed', (request) => {
     if (failed.length < 50) failed.push({ method: request.method(), path: safePath(request.url()), error: request.failure()?.errorText });
   });
-  const response = await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: 15000 });
-  await page.getByRole('heading', { name: 'Overview', exact: true }).waitFor({ timeout: 10000 });
+  let status = null;
+  try {
+    const response = await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: 12000 });
+    status = response?.status() ?? null;
+    await page.getByRole('heading', { name: 'Overview', exact: true }).waitFor({ timeout: 5000 });
   if (destination !== 'Overview') {
     await page.getByRole('button', { name: destination, exact: true }).click();
-    await page.getByRole('heading', { name: destination === 'Diagnostics' ? 'System diagnostics' : destination, exact: true }).waitFor();
+    await page.getByRole('heading', { name: destination === 'Diagnostics' ? 'System diagnostics' : destination, exact: true }).waitFor({ timeout: 5000 });
   }
   await page.evaluate(() => document.fonts.ready);
   if (destination === 'Overview') {
@@ -55,7 +58,11 @@ try {
   } else if (destination === 'Diagnostics') {
     await page.getByText('Loading metrics…', { exact: true }).waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   }
-  const result = { page: destination, status: response?.status(), errors: errors.slice(0, 50),
+  } catch (error) {
+    if (mode !== 'diagnostics') throw error;
+    errors.push(redact(String(error)));
+  }
+  const result = { page: destination, status, errors: errors.slice(0, 50),
     requests, failed_requests: failed, viewport: page.viewportSize() };
   if (mode === 'screenshot') {
     result.image = (await page.screenshot({ animations: 'disabled' })).toString('base64');
@@ -65,7 +72,7 @@ try {
       id, impact, description, helpUrl, targets: nodes.map(node => node.target),
     }));
   } else {
-    result.aria_snapshot = (await page.locator('body').ariaSnapshot()).slice(0, 20000);
+    result.aria_snapshot = (await page.locator('body').ariaSnapshot({ timeout: 3000 }).catch(() => '')).slice(0, 20000);
   }
   process.stdout.write(JSON.stringify(result));
 } finally {

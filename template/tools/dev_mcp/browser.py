@@ -31,7 +31,8 @@ def browser_diagnostics(page: Page = "Overview") -> dict:
 
 def inspect_page(page: Page = "Overview") -> dict:
     """Inspect the accessible structure of a live development page."""
-    return probe(page, "diagnostics")
+    data = probe(page, "diagnostics")
+    return {key: data[key] for key in ("page", "status", "viewport", "aria_snapshot")}
 
 
 def browser_errors(page: Page = "Overview") -> dict:

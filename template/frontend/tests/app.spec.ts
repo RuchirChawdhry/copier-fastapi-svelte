@@ -158,6 +158,7 @@ test('note API validation errors identify the operation and field', async ({ pag
 
 
 test('development browser probe returns live accessibility and screenshot evidence', async ({ page }) => {
+  test.setTimeout(120000);
   await page.goto('/');
   const { execFile } = await import('node:child_process');
   const { promisify } = await import('node:util');
@@ -168,4 +169,6 @@ test('development browser probe returns live accessibility and screenshot eviden
   expect(report.status).toBe(200);
   const screenshot = await execute(process.execPath, ['scripts/dev-browser.mjs', 'Settings', 'screenshot', 'dark'], { timeout: 45000, maxBuffer: 8 * 1024 * 1024 });
   expect(Buffer.from(JSON.parse(screenshot.stdout).image, 'base64').subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+  const audit = await execute(process.execPath, ['scripts/dev-browser.mjs', 'Settings', 'accessibility', 'dark'], { timeout: 45000 });
+  expect(Array.isArray(JSON.parse(audit.stdout).violations)).toBe(true);
 });

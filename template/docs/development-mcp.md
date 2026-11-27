@@ -1,6 +1,6 @@
 # Development MCP
 
-Always included for local development. It is independent of optional application MCP at /mcp/. FastMCP is a dev dependency in every profile, and a runtime dependency only when application MCP is enabled. The app wheel excludes tools; the sdist excludes development MCP source. Use `uv sync --locked --no-dev` for production.
+Always included for local development. It is independent of optional application MCP at /mcp/. FastMCP is a dev dependency in every profile, and a runtime dependency only when application MCP is enabled. The app wheel excludes tools; the sdist excludes development MCP source. Use `uv sync --locked --no-dev` for production. `task serve` launches the API with `--no-dev`; the normal development and test commands retain development dependencies.
 
 ## Setup and registration
 

@@ -66,6 +66,20 @@ test('diagnostics cache is reused on immediate navigation', async ({ page }) => 
 });
 
 
+test('header settings gear opens settings', async ({ page }) => {
+  await page.goto('/');
+  const search = page.getByRole('button', { name: 'Search commands', exact: true });
+  const gear = page.getByRole('button', { name: 'Open settings', exact: true });
+  await expect(search).toBeVisible();
+  await expect(gear).toBeVisible();
+  const searchBox = await search.boundingBox();
+  const gearBox = await gear.boundingBox();
+  expect(gearBox!.x).toBeGreaterThanOrEqual(searchBox!.x + searchBox!.width);
+  await gear.click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await expect(gear).toHaveAttribute('aria-current', 'page');
+});
+
 test('workspace menu and sidebar keyboard navigation', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Workspace actions' }).click();

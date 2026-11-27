@@ -25,7 +25,11 @@ test('capture application screens', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'Page 2', exact: true })).toBeInViewport();
   await capture(page, '01-overview-dark');
   await page.getByRole('button', { name: 'Resources', exact: true }).click();
-  await expect(page.getByRole('link', { name: /OpenAPI schema/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Resources', exact: true })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('link', { name: /API documentation/ })).toBeInViewport();
+  await expect(page.getByRole('link', { name: /OpenAPI schema/ })).toBeInViewport();
+  await expect(page.getByRole('link', { name: /Service health/ })).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Open settings', exact: true })).toBeInViewport();
   await capture(page, '12-navigation-menu');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Filter by creation date' }).click();
@@ -65,7 +69,9 @@ test('capture application screens', async ({ page, request }) => {
   await page.getByRole('button', { name: 'Add note' }).click();
   await expect(page.getByText('Enter a note.')).toBeVisible();
   await capture(page, '04-form-validation');
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('button', { name: 'Open settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await page.mouse.move(700, 100);
   await capture(page, '05-settings');
   await page.getByRole('switch', { name: 'Reduce motion' }).click();
   await page.getByRole('switch', { name: 'Success notifications' }).click();

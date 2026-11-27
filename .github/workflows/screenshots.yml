@@ -2,7 +2,12 @@ name: Screenshots
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/screenshots.yml']
+    paths:
+      - '.github/workflows/screenshots.yml'
+      - 'template/frontend/**'
+      - 'template/app/**'
+      - 'template/Taskfile.yml.jinja'
+      - 'copier.yml'
 permissions:
   contents: write
 concurrency:

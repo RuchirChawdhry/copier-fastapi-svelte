@@ -19,20 +19,13 @@
   import MessageSquare from '@lucide/svelte/icons/message-square';
   import { Switch } from '$lib/components/ui/switch/index.js';
   import { Separator } from '$lib/components/ui/separator/index.js';
-  import { Kbd, KbdGroup } from '$lib/components/ui/kbd/index.js';
-  import ResourceNavigation from '$lib/ResourceNavigation.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-  import * as Dropdown from '$lib/components/ui/dropdown-menu/index.js';
   import * as Item from '$lib/components/ui/item/index.js';
   import * as Marker from '$lib/components/ui/marker/index.js';
   import * as Select from '$lib/components/ui/select/index.js';
-  import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-  import Ellipsis from '@lucide/svelte/icons/ellipsis';
-  import Keyboard from '@lucide/svelte/icons/keyboard';
-  import ExternalLink from '@lucide/svelte/icons/external-link';
   import WorkspaceSidebar from '$lib/WorkspaceSidebar.svelte';
+  import WorkspaceHeader from '$lib/WorkspaceHeader.svelte';
   import { preferences, setPreference } from '$lib/preferences.svelte';
-  import Search from '@lucide/svelte/icons/search';
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import Settings from '@lucide/svelte/icons/settings';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -59,7 +52,6 @@
   let theme = $state<Theme>(currentTheme());
   let palette = $state(false);
   let sidebarOpen = $state(!document.cookie.split('; ').includes('sidebar_state=false'));
-  const modifier = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
   let page = $state<'workspace' | 'settings' | 'diagnostics'>('workspace');
   const queryClient = useQueryClient();
   const notesQuery = createQuery(() => notesOptions);
@@ -149,45 +141,7 @@
 <Sidebar.Provider bind:open={sidebarOpen} style="--sidebar-width: 14rem; --sidebar-width-icon: 3.25rem;">
   <WorkspaceSidebar projectName={{ project_name | tojson }} {page} onNavigate={(destination) => page = destination} />
   <Sidebar.Inset class="min-w-0 text-foreground">
-    <header class="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background px-4 md:px-6">
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          {#snippet child({ props })}
-            <Sidebar.Trigger {...props} aria-label="Toggle sidebar" />
-          {/snippet}
-        </Tooltip.Trigger>
-        <Tooltip.Content><span>Toggle sidebar</span> <KbdGroup><Kbd>{modifier}</Kbd><Kbd>B</Kbd></KbdGroup></Tooltip.Content>
-      </Tooltip.Root>
-      <Separator orientation="vertical" class="!h-5" />
-      <span class="truncate text-sm font-medium">{page === 'workspace' ? 'Overview' : page === 'settings' ? 'Settings' : 'Diagnostics'}</span>
-      <div class="flex-1"></div>
-      <ResourceNavigation />
-      <Button variant="outline" onclick={() => palette = true} aria-label="Search commands"><Search class="size-4" /><span class="hidden sm:inline">Search commands</span><KbdGroup class="ml-2 hidden sm:inline-flex"><Kbd>{modifier}</Kbd><Kbd>K</Kbd></KbdGroup></Button>
-      <Dropdown.Root>
-        <Dropdown.Trigger>
-          {#snippet child({ props })}
-            <Button {...props} variant="outline" size="icon" aria-label="Workspace actions"><Ellipsis class="size-4" /></Button>
-          {/snippet}
-        </Dropdown.Trigger>
-        <Dropdown.Content align="end" class="w-56">
-          <Dropdown.Group>
-            <Dropdown.Label>Workspace actions</Dropdown.Label>
-            <Dropdown.Item onSelect={refresh}><RefreshCw aria-hidden="true" /> Refresh data</Dropdown.Item>
-            <Dropdown.Item onSelect={() => palette = true}><Keyboard aria-hidden="true" /> Search commands <Dropdown.Shortcut>{modifier}+K</Dropdown.Shortcut></Dropdown.Item>
-            <Dropdown.Item onSelect={() => page = 'settings'}><Settings aria-hidden="true" /> Open settings</Dropdown.Item>
-            <Dropdown.Item onSelect={() => page = 'diagnostics'}><Activity aria-hidden="true" /> Diagnostics</Dropdown.Item>
-          </Dropdown.Group>
-          <Dropdown.Separator />
-          <Dropdown.Group>
-            <Dropdown.Label>Resources</Dropdown.Label>
-            <Dropdown.Item onSelect={() => window.open('/docs', '_blank', 'noopener,noreferrer')}><ExternalLink aria-hidden="true" /> API documentation</Dropdown.Item>
-{% if enable_rss %}
-            <Dropdown.Item onSelect={copyFeed}><Rss aria-hidden="true" /> Copy RSS feed URL</Dropdown.Item>
-{% endif %}
-          </Dropdown.Group>
-        </Dropdown.Content>
-      </Dropdown.Root>
-    </header>
+    <WorkspaceHeader {page} onNavigate={(destination) => page = destination} onSearch={() => palette = true} onRefresh={refresh}{% if enable_rss %} onCopyFeed={copyFeed}{% endif %} />
     <div class="mx-auto w-full max-w-screen-2xl space-y-6 p-5 md:p-9">
       {#if page === 'workspace'}
         <div class="flex flex-wrap items-center justify-between gap-4">

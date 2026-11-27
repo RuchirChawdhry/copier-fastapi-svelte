@@ -1,0 +1,176 @@
+name: Latest stable dependency compatibility
+
+on:
+  push:
+    tags:
+      - 'deps-latest-*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: latest-deps-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  UV_PRERELEASE: disallow
+  npm_config_strict_peer_dependencies: 'true'
+
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
+      node: ${{ steps.pin.outputs.node }}
+      python: ${{ steps.pin.outputs.python }}
+      uv: ${{ steps.pin.outputs.uv }}
+      task: ${{ steps.pin.outputs.task }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+        with:
+          version: latest
+          enable-cache: false
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e
+        with:
+          version: 3.x
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '*'
+          check-latest: true
+          package-manager-cache: false
+      - name: Resolve latest stable Python
+        run: uv python install
+      - name: Discover and pin latest stable dependencies
+        id: pin
+        run: |
+          python_path="$(uv python find --managed-python)"
+          copier_version="$(sed -n 's/^_min_copier_version: "\(.*\)"/\1/p' copier.yml)"
+          uv run --no-project --python "$python_path" --with "copier==$copier_version" --with packaging python scripts/latest_dependencies.py
+      - name: Export isolated candidate
+        run: git diff --binary > latest-deps.patch
+      - name: Prepare existing pairwise matrix and preflight
+        id: matrix
+        run: |
+          echo "value=$(jq -c '.include += [{"name":"preflight","preflight":true}]' tests/feature-matrix.json)" >> "$GITHUB_OUTPUT"
+      - name: Report selected versions
+        if: always()
+        run: |
+          if test -f latest-deps-report.json; then
+            {
+              echo '## Latest stable candidate'
+              echo '| Ecosystem | Dependency | Exact version |'
+              echo '|---|---|---|'
+              jq -r '.pypi | to_entries[] | "| PyPI | \(.key) | \(.value) |"' latest-deps-report.json
+              jq -r '.npm | to_entries[] | "| npm | \(.key) | \(.value) |"' latest-deps-report.json
+              jq -r '"| Runtime | Python | \(.python) |", "| Runtime | Node | \(.node) |", "| Tool | uv | \(.uv) |", "| Tool | Task | \(.task) |", "| Container | Redis | \(.redis.version) |"' latest-deps-report.json
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: latest-deps-candidate
+          path: |
+            latest-deps-report.json
+            latest-deps.patch
+          if-no-files-found: warn
+
+  validate:
+    needs: candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.candidate.outputs.matrix) }}
+    env:
+      UV_PYTHON: ${{ needs.candidate.outputs.python }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: latest-deps-candidate
+          path: candidate
+      - name: Apply candidate in disposable checkout
+        run: |
+          git apply candidate/latest-deps.patch
+          git config user.name 'Dependency compatibility probe'
+          git config user.email 'dependency-probe@users.noreply.github.com'
+          git add -u
+          git commit -m 'Temporary latest stable dependency candidate'
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+        with:
+          version: ${{ needs.candidate.outputs.uv }}
+          enable-cache: false
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e
+        with:
+          version: ${{ needs.candidate.outputs.task }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: ${{ needs.candidate.outputs.node }}
+          package-manager-cache: false
+      - name: Install exact Python
+        run: uv python install "$UV_PYTHON"
+      - name: Template rendering and lint
+        if: matrix.preflight
+        run: task test
+      - name: Render selected variant
+        if: '!matrix.preflight'
+        env:
+          JOBS: ${{ matrix.jobs }}
+          TERMINAL: ${{ matrix.terminal }}
+          EVENTS: ${{ matrix.events }}
+          MCP: ${{ matrix.mcp }}
+          SCHEMA_FORMS: ${{ matrix.schema_forms }}
+          RSS: ${{ matrix.rss }}
+          NTFY: ${{ matrix.ntfy }}
+        run: task render:ci
+      - name: Install exact dependencies and generate fresh locks
+        if: '!matrix.preflight'
+        id: install
+        uses: ./.github/actions/setup-cached-project
+        with:
+          project-path: generated
+          format: 'true'
+      - name: Start Redis
+        if: matrix.jobs && steps.install.outcome == 'success'
+        working-directory: generated
+        run: task jobs:redis
+      - name: Backend lint, tests and packaging
+        if: '!matrix.preflight && steps.install.outcome == ''success'''
+        working-directory: generated
+        run: |
+          task api:check-code
+          task test:ci
+          task api:build
+      - name: Frontend typecheck and build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        id: frontend
+        working-directory: generated
+        run: |
+          task api:check
+          task ui:check
+          task ui:build
+      - name: Browser integration tests
+        if: ${{ !cancelled() && steps.frontend.outcome == 'success' }}
+        working-directory: generated
+        run: task test:e2e:ci
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: latest-deps-${{ matrix.name }}
+          path: |
+            generated/pyproject.toml
+            generated/uv.lock
+            generated/frontend/package.json
+            generated/frontend/pnpm-lock.yaml
+            generated/backend.xml
+            generated/frontend/browser.xml
+            generated/frontend/test-results/
+          if-no-files-found: ignore

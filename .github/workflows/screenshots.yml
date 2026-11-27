@@ -2,6 +2,7 @@ name: Screenshots
 on:
   workflow_dispatch:
   push:
+    branches: ['**']
     paths:
       - '.github/workflows/screenshots.yml'
       - 'template/frontend/**'

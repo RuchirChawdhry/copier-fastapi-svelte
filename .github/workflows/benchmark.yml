@@ -2,6 +2,7 @@ name: Frontend benchmark
 on:
   workflow_dispatch:
   push:
+    branches: ['**']
     paths: ['.github/workflows/benchmark.yml']
 permissions:
   contents: read

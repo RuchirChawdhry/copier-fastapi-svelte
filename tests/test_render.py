@@ -5,6 +5,7 @@ from itertools import combinations, product
 from pathlib import Path
 
 import pytest
+from packaging.requirements import Requirement
 from copier import run_copy
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,13 +41,21 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert (tmp_path / "compose.yml").exists() == jobs
     assert (tmp_path / "frontend/src/lib/features/terminal/Terminal.svelte").exists() == terminal
     dependencies = (tmp_path / "pyproject.toml").read_text()
-    for name in ("taskiq", "taskiq-redis", "taskiq-fastapi"):
-        assert (f'"{name}"' in dependencies) == jobs
-    assert (tmp_path / "app/events.py").exists() == events
-    assert ("sse-starlette" in dependencies) == events
     manifest = tomllib.loads(dependencies)
-    assert ("fastmcp==4.2.6" in manifest["project"]["dependencies"]) == mcp
-    assert "fastmcp==4.2.6" in manifest["dependency-groups"]["dev"]
+    runtime = {req.name: req for value in manifest["project"]["dependencies"]
+               if (req := Requirement(value))}
+    dev = {req.name: req for value in manifest["dependency-groups"]["dev"]
+           if (req := Requirement(value))}
+    for name in ("taskiq", "taskiq-redis", "taskiq-fastapi"):
+        assert (name in runtime) == jobs
+    assert (tmp_path / "app/events.py").exists() == events
+    assert ("sse-starlette" in runtime) == events
+    assert ("fastmcp" in runtime) == mcp
+    assert "fastmcp" in dev
+    assert len(list(dev["fastmcp"].specifier)) == 1
+    assert next(iter(dev["fastmcp"].specifier)).operator == "=="
+    if mcp:
+        assert runtime["fastmcp"] == dev["fastmcp"]
     assert manifest["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["app"]
     assert "/tools" in manifest["tool"]["hatch"]["build"]["targets"]["sdist"]["exclude"]
     assert (tmp_path / "tools/dev_mcp/server.py").is_file()
@@ -100,9 +109,9 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert "mcp:dev:" in taskfile
     assert "mcp:dev:check:" in taskfile
     assert (tmp_path / "scripts/doctor.py").is_file()
-    assert ("httpx" in tomllib.loads(dependencies)["project"]["dependencies"]) == ntfy
+    assert ("httpx" in runtime) == ntfy
     json.loads(frontend)
-    assert "uvicorn[standard]" in tomllib.loads(dependencies)["project"]["dependencies"]
+    assert "standard" in runtime["uvicorn"].extras
     assert "uv sync --locked" in taskfile
     assert "pnpm install --frozen-lockfile" in taskfile
     assert "deps:check:" in taskfile

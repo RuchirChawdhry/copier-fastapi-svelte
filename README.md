@@ -45,3 +45,8 @@ Showcase screenshots run against the actual frontend with deterministic Playwrig
 Every generated project includes a local development-only FastMCP server for context, doctor, OpenAPI, browser inspection, accessibility, SQLite schema and verification. Application MCP is independently optional. See the generated docs/development-mcp.md for setup and tools.
 
 Both MCP servers use FastMCP 4.2.6 (MCP SDK v2), with current 2026-07-28 protocol coverage for both servers.
+
+
+## Latest stable dependency compatibility probe
+
+Push a unique non-release tag such as `deps-latest-20261127-01` to run the **Latest stable dependency compatibility** workflow. It resolves stable direct PyPI/npm releases (including optional and development dependencies), pins the current Python, Node, pnpm and tool versions, tests Redis's stable image by digest, and validates the existing seven pairwise profiles plus rendering preflight. Download the `latest-deps-candidate` artifact for exact versions and the candidate patch; variant artifacts contain lockfiles and test reports. The workflow never pushes its temporary commit, changes main, or publishes a release. A passing run is evidence for the tested Linux configuration, not a security audit or a guarantee for every platform. External deployment tools and the GitHub Action implementations are not upgraded by this probe.

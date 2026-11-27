@@ -1,0 +1,19 @@
+import asyncio
+
+import taskiq_fastapi
+from taskiq_redis import ListQueueBroker, RedisAsyncResultBackend
+
+from .config import get_settings
+from .db import Database
+
+settings = get_settings()
+broker = ListQueueBroker(settings.redis_url, queue_name="{{ project_slug }}:jobs").with_result_backend(
+    RedisAsyncResultBackend(redis_url=settings.redis_url, result_ex_time=86400)
+)
+taskiq_fastapi.init(broker, "app.api:app")
+
+
+@broker.task
+async def save_note(text: str) -> dict:
+    return await asyncio.to_thread(Database(settings.database).add_note, text)
+

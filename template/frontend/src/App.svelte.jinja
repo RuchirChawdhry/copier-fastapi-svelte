@@ -1,0 +1,173 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { Toaster, toast } from 'svelte-sonner';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import * as Command from '$lib/components/ui/command/index.js';
+  import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
+  import { api, type Health, type Note } from '$lib/api';
+  import { themes, applyTheme, currentTheme, type Theme } from '$lib/theme';
+  import { notify, requestNotifications } from '$lib/notifications';
+{% if enable_terminal %}
+  import Terminal from '$lib/Terminal.svelte';
+{% endif %}
+
+  let theme = $state<Theme>(currentTheme());
+  let palette = $state(false);
+  let page = $state<'workspace' | 'settings'>('workspace');
+  let notes = $state<Note[]>([]);
+  let health = $state<Health | null>(null);
+  let draft = $state('');
+  let busy = $state(false);
+  let dark = $derived(!['light', 'solarized-light'].includes(theme));
+
+  function setTheme(value: Theme) {
+    theme = value;
+    applyTheme(value);
+  }
+
+  function action(run: () => void) {
+    palette = false;
+    run();
+  }
+
+  function keyboard(event: KeyboardEvent) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      palette = !palette;
+    }
+  }
+
+  async function refresh() {
+    try {
+      [notes, health] = await Promise.all([api.notes(), api.health()]);
+    } catch (error) {
+      toast.error(String(error));
+    }
+  }
+
+  async function add(event: SubmitEvent) {
+    event.preventDefault();
+    const text = draft.trim();
+    if (!text || busy) return;
+    busy = true;
+    try {
+      notes = [...notes, await api.add(text)];
+      draft = '';
+      notify('Note saved');
+    } catch (error) {
+      toast.error(String(error));
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function remove(id: number) {
+    try {
+      await api.remove(id);
+      notes = notes.filter((note) => note.id !== id);
+      notify('Note deleted');
+    } catch (error) {
+      toast.error(String(error));
+    }
+  }
+
+  onMount(() => { void refresh(); });
+</script>
+
+<svelte:window onkeydown={keyboard} />
+<Toaster theme={dark ? 'dark' : 'light'} position="bottom-right" richColors />
+<div class="min-h-screen bg-background text-foreground">
+  <header class="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background px-4 md:px-6">
+    <div class="grid size-8 place-items-center rounded-md bg-primary font-bold text-primary-foreground">A</div>
+    <span class="font-semibold">{{ project_name | e }}</span>
+    <div class="flex-1"></div>
+    <Button variant="outline" onclick={() => palette = true}>Search commands <kbd class="ml-4 text-xs text-muted-foreground">Ctrl K</kbd></Button>
+  </header>
+  <div class="mx-auto grid max-w-screen-2xl md:grid-cols-[220px_1fr]">
+    <aside class="flex gap-2 border-b p-4 md:min-h-[calc(100vh-56px)] md:flex-col md:border-r md:border-b-0">
+      <p class="hidden px-3 py-2 text-xs font-medium uppercase tracking-widest text-muted-foreground md:block">Workspace</p>
+      <Button variant={page === 'workspace' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'workspace'}>Overview</Button>
+      <Button variant={page === 'settings' ? 'secondary' : 'ghost'} class="justify-start" onclick={() => page = 'settings'}>Settings</Button>
+      <div class="flex-1"></div>
+      <a class="hidden px-3 py-2 text-xs text-muted-foreground md:block" href="/api/health" target="_blank" rel="noreferrer">API health ↗</a>
+    </aside>
+    <main class="space-y-6 p-5 md:p-9">
+      {#if page === 'workspace'}
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div><p class="text-xs font-medium uppercase tracking-widest text-muted-foreground">Application</p><h1 class="mt-1 text-3xl font-semibold tracking-tight">Overview</h1></div>
+          <Button variant="outline" onclick={refresh}>Refresh</Button>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-3">
+          <div class="rounded-lg border bg-card p-5"><p class="text-sm text-muted-foreground">API readiness</p><p class="mt-2 text-xl font-semibold">{health?.status ?? 'Unknown'}</p></div>
+          <div class="rounded-lg border bg-card p-5"><p class="text-sm text-muted-foreground">Database</p><p class="mt-2 text-xl font-semibold">{health?.dependencies.sqlite ?? 'Unknown'}</p></div>
+          <div class="rounded-lg border bg-card p-5"><p class="text-sm text-muted-foreground">Saved notes</p><p class="mt-2 text-xl font-semibold">{notes.length}</p></div>
+        </div>
+        <section class="rounded-lg border bg-card p-5">
+          <h2 class="text-lg font-semibold">Notes</h2>
+          <p class="mb-5 text-sm text-muted-foreground">A working example of API, persistence and context menus.</p>
+          <form class="mb-4 flex gap-2" onsubmit={add}>
+            <input aria-label="New note" placeholder="Write a note…" maxlength="2000" bind:value={draft} class="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm" />
+            <Button type="submit" disabled={busy || !draft.trim()}>Add note</Button>
+          </form>
+          {#each notes as note (note.id)}
+            <ContextMenu.Root>
+              <ContextMenu.Trigger>
+                <div class="flex items-center justify-between gap-3 border-t py-3">
+                  <span class="break-all text-sm">{note.text}</span>
+                  <Button size="sm" variant="ghost" onclick={() => remove(note.id)}>Delete</Button>
+                </div>
+              </ContextMenu.Trigger>
+              <ContextMenu.Content>
+                <ContextMenu.Item onSelect={() => navigator.clipboard.writeText(note.text).then(() => notify('Copied'), () => toast.error('Clipboard unavailable'))}>Copy note</ContextMenu.Item>
+                <ContextMenu.Item onSelect={() => remove(note.id)}>Delete note</ContextMenu.Item>
+              </ContextMenu.Content>
+            </ContextMenu.Root>
+          {:else}
+            <p class="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">No notes yet.</p>
+          {/each}
+        </section>
+{% if enable_terminal %}
+        <Terminal />
+{% endif %}
+      {:else}
+        <h1 class="text-3xl font-semibold tracking-tight">Settings</h1>
+        <section class="rounded-lg border bg-card p-5">
+          <h2 class="text-lg font-semibold">Appearance</h2>
+          <p class="mb-4 text-sm text-muted-foreground">Theme preference is saved on this browser.</p>
+          <div class="flex flex-wrap gap-2">
+            {#each themes as option}
+              <Button variant={theme === option.id ? 'default' : 'outline'} aria-pressed={theme === option.id} onclick={() => setTheme(option.id)}>{option.label}</Button>
+            {/each}
+          </div>
+        </section>
+        <section class="rounded-lg border bg-card p-5">
+          <h2 class="text-lg font-semibold">Notifications</h2>
+          <p class="mb-4 text-sm text-muted-foreground">Enable optional system notifications for this browser.</p>
+          <div class="flex flex-wrap gap-2">
+            <Button variant="outline" onclick={requestNotifications}>Enable desktop notifications</Button>
+            <Button variant="outline" onclick={() => notify('Notification test', true)}>Test notification</Button>
+          </div>
+        </section>
+      {/if}
+    </main>
+  </div>
+</div>
+
+<Command.Dialog bind:open={palette}>
+  <Command.Input placeholder="Type a command…" />
+  <Command.List>
+    <Command.Empty>No commands found.</Command.Empty>
+    <Command.Group heading="Navigation">
+      <Command.Item value="open overview" onSelect={() => action(() => page = 'workspace')}>Open overview</Command.Item>
+      <Command.Item value="open settings" onSelect={() => action(() => page = 'settings')}>Open settings</Command.Item>
+      <Command.Item value="refresh data" onSelect={() => action(refresh)}>Refresh data</Command.Item>
+      <Command.Item value="test notification" onSelect={() => action(() => notify('Notification test', true))}>Test notification</Command.Item>
+    </Command.Group>
+    <Command.Group heading="Appearance">
+      {#each themes as option}
+        <Command.Item value={'theme ' + option.label} onSelect={() => action(() => setTheme(option.id))}>Theme: {option.label}</Command.Item>
+      {/each}
+    </Command.Group>
+  </Command.List>
+</Command.Dialog>
+

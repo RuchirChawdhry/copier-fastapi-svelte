@@ -1,0 +1,105 @@
+import asyncio
+import sqlite3
+from contextlib import AsyncExitStack, asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Response{% if enable_jobs %}, Request{% endif %}
+
+from pydantic import BaseModel, Field
+{% if enable_jobs %}
+from redis.asyncio import Redis
+from redis.exceptions import RedisError
+from .jobs import broker, save_note
+{% endif %}
+
+from .config import get_settings
+from .db import Database
+from .mcp import create_mcp
+
+settings = get_settings()
+database = Database(settings.database)
+mcp_app = create_mcp(database).http_app(path="/")
+
+
+class NoteInput(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class Note(BaseModel):
+    id: int
+    text: str
+
+
+class Health(BaseModel):
+    status: str
+    dependencies: dict[str, str]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await asyncio.to_thread(database.initialize)
+    async with AsyncExitStack() as stack:
+        await stack.enter_async_context(mcp_app.lifespan(app))
+{% if enable_jobs %}
+        if not broker.is_worker_process:
+            await broker.startup()
+            stack.push_async_callback(broker.shutdown)
+        app.state.redis = Redis.from_url(settings.redis_url)
+        stack.push_async_callback(app.state.redis.aclose)
+{% endif %}
+        yield
+
+
+app = FastAPI(title={{ project_name | tojson }}, lifespan=lifespan)
+app.mount("/mcp", mcp_app)
+
+
+@app.get("/api/health/live")
+def live() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/api/health")
+@app.get("/api/health/ready")
+async def health(response: Response{% if enable_jobs %}, request: Request{% endif %}) -> Health:
+    dependencies = {}
+    try:
+        dependencies["sqlite"] = "ok" if await asyncio.to_thread(database.ready) else "unavailable"
+    except (OSError, sqlite3.Error):
+        dependencies["sqlite"] = "unavailable"
+{% if enable_jobs %}
+    try:
+        async with asyncio.timeout(2):
+            await request.app.state.redis.ping()
+        dependencies["redis"] = "ok"
+    except (OSError, RedisError, TimeoutError):
+        dependencies["redis"] = "unavailable"
+{% endif %}
+    ready = all(value == "ok" for value in dependencies.values())
+    response.status_code = 200 if ready else 503
+    return Health(status="ok" if ready else "unavailable", dependencies=dependencies)
+
+
+@app.get("/api/notes", response_model=list[Note])
+def notes():
+    return database.notes()
+
+
+@app.post("/api/notes", response_model=Note, status_code=201)
+def add_note(payload: NoteInput):
+    return database.add_note(payload.text)
+
+
+@app.delete("/api/notes/{note_id}", status_code=204)
+def delete_note(note_id: int) -> Response:
+    if not database.delete_note(note_id):
+        raise HTTPException(404, "Note not found")
+    return Response(status_code=204)
+{% if enable_jobs %}
+
+
+@app.post("/api/jobs", status_code=202)
+async def enqueue(payload: NoteInput) -> dict[str, str]:
+    task = await save_note.kiq(payload.text)
+    return {"task_id": task.task_id}
+{% endif %}
+

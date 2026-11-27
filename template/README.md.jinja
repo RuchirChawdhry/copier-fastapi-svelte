@@ -1,0 +1,33 @@
+# {{ project_name }}
+
+Install uv, Node 24, pnpm and Go Task.
+
+```sh
+task setup
+{% if enable_jobs %}
+task jobs:redis
+# Separate terminal: task jobs:worker
+{% endif %}
+task dev
+```
+
+Open http://127.0.0.1:5173. API health: http://127.0.0.1:8000/api/health.
+
+Setup installs the official shadcn-svelte button, command and context-menu components from its registry. Commit the generated UI sources and uv/pnpm lockfiles after setup.
+
+## Production and tailnet
+
+Install Caddy, run task build and task serve from the project directory. Caddy binds to loopback on port 8080. For private HTTPS access, authenticate Tailscale, enable MagicDNS and HTTPS, then run task tailscale. Restrict tailnet grants to intended users/devices. Do not use Funnel without introducing application authentication. For direct LAN access explicitly configure a Caddy listener, HTTPS and appropriate access controls.
+
+MCP: streamable HTTP at /mcp/ on the API or Caddy origin; exposes read-only list_notes. Native browser notifications require permission and localhost or HTTPS. They work while the page is open; no background push service is included.
+{% if enable_terminal %}
+
+## Terminal
+
+Install ttyd (includes xterm.js) on the Linux host. Run as an unprivileged account. Create a strong password hash using caddy hash-password and export it as TERMINAL_PASSWORD_HASH in Caddy's process environment. Run task terminal separately. Caddy protects terminal HTTP and WebSocket routes with basic authentication (username operator). Open through Caddy, not Vite. Do not expose ttyd directly; a shell has the privileges of the host account.
+{% endif %}
+
+## Development
+
+task check, task fix, task test, task test:e2e, task build. Install Chromium using pnpm --dir frontend exec playwright install chromium. After git init, install hooks using uv run pre-commit install.
+

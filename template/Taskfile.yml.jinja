@@ -1,0 +1,84 @@
+version: '3'
+tasks:
+  default:
+    cmds: [task --list]
+  install:
+    desc: Install backend and frontend dependencies
+    cmds:
+      - uv sync
+      - pnpm --dir frontend install
+      - task: ui:components
+  ui:components:
+    desc: Initialize official shadcn-svelte components if absent
+    status:
+      - test -f src/lib/components/ui/command/index.ts
+      - test -f src/lib/components/ui/context-menu/index.ts
+      - test -f src/lib/components/ui/button/index.ts
+    dir: frontend
+    cmds:
+      - pnpm exec shadcn-svelte add button command context-menu --yes
+  setup:
+    desc: Install dependencies and initialize database
+    cmds:
+      - task: install
+      - uv run python -m app.cli init-db
+  dev:
+    desc: API and Vite hot reload
+    cmds:
+      - task --parallel api:dev ui:dev
+  api:dev:
+    cmds:
+      - uv run python -m app.cli serve --reload
+  ui:dev:
+    cmds:
+      - pnpm --dir frontend dev
+  build:
+    desc: Build frontend and Python distribution
+    cmds:
+      - pnpm --dir frontend build
+      - uv build
+  serve:
+    desc: Run API and Caddy after building
+    cmds:
+      - task --parallel api:serve proxy
+  api:serve:
+    cmds:
+      - uv run python -m app.cli serve
+  proxy:
+    cmds:
+      - caddy run --config Caddyfile --adapter caddyfile
+  tailscale:
+    desc: Private Tailscale HTTPS to Caddy
+    cmds:
+      - tailscale serve --bg http://127.0.0.1:8080
+  test:
+    cmds:
+      - uv run pytest -q
+  test:e2e:
+    cmds:
+      - pnpm --dir frontend exec playwright test
+  check:
+    cmds:
+      - uv run ruff check app tests
+      - uv run ty check app
+      - pnpm --dir frontend check
+  fix:
+    cmds:
+      - uv run ruff check --fix app tests
+      - uv run ruff format app tests
+      - pnpm --dir frontend format
+{% if enable_jobs %}
+  jobs:redis:
+    cmds:
+      - docker compose up -d --wait redis
+  jobs:worker:
+    cmds:
+      - uv run taskiq worker app.jobs:broker --workers 1
+{% endif %}
+{% if enable_terminal %}
+  terminal:
+    desc: Run ttyd on loopback as unprivileged user
+    cmds:
+      - ttyd -i 127.0.0.1 -p 7681 -b /terminal -O -W -m 1 /bin/bash
+{% endif %}
+

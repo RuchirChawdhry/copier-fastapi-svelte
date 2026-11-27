@@ -1,0 +1,69 @@
+name: Template validation
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        jobs: [false, true]
+        terminal: [false, true]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10
+      - name: Render contract tests
+        run: uv run --no-project --with copier==9.14.1 --with pytest pytest -q tests
+      - name: Render selected variant
+        env:
+          JOBS: ${{ matrix.jobs }}
+          TERMINAL: ${{ matrix.terminal }}
+        run: uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD -d enable_jobs="$JOBS" -d enable_terminal="$TERMINAL" . generated
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: generated/frontend/.node-version
+      - name: Install dependencies
+        working-directory: generated
+        run: |
+          npm install -g corepack
+          corepack enable pnpm
+          uv sync
+          pnpm --dir frontend install
+          pnpm --dir frontend exec shadcn-svelte add button command context-menu --yes
+      - name: Start Redis
+        if: matrix.jobs
+        working-directory: generated
+        run: docker compose up -d --wait redis
+      - name: Backend tests
+        working-directory: generated
+        run: |
+          uv run ruff check app tests
+          uv run pytest -q --benchmark-disable --junitxml=backend.xml
+          uv build
+      - name: Frontend typecheck and build
+        working-directory: generated/frontend
+        run: |
+          pnpm check
+          pnpm build
+      - name: Browser tests
+        working-directory: generated/frontend
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE=browser.xml pnpm exec playwright test --reporter=list,junit
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reports-${{ matrix.jobs }}-${{ matrix.terminal }}
+          path: |
+            generated/backend.xml
+            generated/frontend/browser.xml
+          if-no-files-found: ignore
+

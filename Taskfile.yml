@@ -1,0 +1,9 @@
+version: '3'
+tasks:
+  test:
+    cmds:
+      - uv run --no-project --with copier==9.14.1 --with pytest pytest -q tests
+  render:
+    cmds:
+      - uvx --from copier==9.14.1 copier copy --defaults --vcs-ref=HEAD . .generated
+

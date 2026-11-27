@@ -1,0 +1,16 @@
+<script lang="ts">
+  let opened = $state(false);
+</script>
+<section class="rounded-lg border bg-card p-5">
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <h2 class="font-medium">Terminal</h2>
+      <p class="text-sm text-muted-foreground">Authenticated ttyd / xterm.js shell. Use Caddy, not Vite.</p>
+    </div>
+    <button class="rounded-md border px-3 py-2 text-sm" onclick={() => opened = !opened}>{opened ? 'Close terminal' : 'Open terminal'}</button>
+  </div>
+  {#if opened}
+    <iframe title="Browser terminal" src="/terminal/" class="mt-4 h-96 w-full rounded-md border"></iframe>
+  {/if}
+</section>
+

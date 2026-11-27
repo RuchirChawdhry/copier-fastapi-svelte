@@ -1,0 +1,25 @@
+http://:8080 {
+    bind 127.0.0.1
+
+    @backend path /api/* /mcp /mcp/* /docs /openapi.json /redoc
+    handle @backend {
+        reverse_proxy 127.0.0.1:8000
+    }
+{% if enable_terminal %}
+
+    redir /terminal /terminal/ 308
+    handle /terminal/* {
+        basic_auth {
+            operator {$TERMINAL_PASSWORD_HASH}
+        }
+        reverse_proxy 127.0.0.1:7681
+    }
+{% endif %}
+
+    handle {
+        root * frontend/dist
+        try_files {path} /index.html
+        file_server
+    }
+}
+

@@ -1,0 +1,25 @@
+_min_copier_version: "9.14.1"
+_subdirectory: template
+_templates_suffix: .jinja
+_envops:
+  trim_blocks: true
+  lstrip_blocks: true
+project_name:
+  type: str
+  default: My Application
+project_slug:
+  type: str
+  default: "{{ project_name | lower | replace(' ', '-') | replace('_', '-') }}"
+  validator: >-
+    {% if not (project_slug | regex_search('^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$')) %}
+    Use lowercase letters and digits separated by hyphens.
+    {% endif %}
+enable_jobs:
+  type: bool
+  default: false
+  help: Include Taskiq and Redis?
+enable_terminal:
+  type: bool
+  default: false
+  help: Include authenticated ttyd browser terminal?
+

@@ -27,8 +27,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+[tool.hatch.build.targets.sdist]
+exclude = ["/tools", "/tests/test_dev_mcp.py", "/frontend/scripts/dev-browser.mjs"]
 [dependency-groups]
-dev = ["httpx", "pytest", "pytest-benchmark", "ruff", "ty", "pre-commit"]
+dev = ["fastmcp>=2,<3", "pyyaml", "httpx", "pytest", "pytest-benchmark", "ruff", "ty", "pre-commit"]
 [tool.ruff]
 target-version = "py314"
 line-length = 100

@@ -21,6 +21,20 @@ tasks:
       - task: doctor
         vars:
           CLI_ARGS: --json
+  mcp:dev:
+    desc: Start the local development MCP server (stdio)
+    silent: true
+    cmds:
+      - uv run --locked python -m tools.dev_mcp
+  mcp:dev:inspect:
+    desc: List development MCP tool schemas through the MCP client
+    silent: true
+    cmds:
+      - uv run --locked python -m tools.dev_mcp --inspect
+  mcp:dev:check:
+    desc: Test the development MCP server
+    cmds:
+      - uv run --locked pytest -q tests/test_dev_mcp.py
   deps:bootstrap:
     desc: Create missing lockfiles only (unreleased development copies)
     cmds:
@@ -206,7 +220,7 @@ tasks:
       - task: ui:check
   api:check-code:
     cmds:
-      - uv run --locked ruff check app tests scripts
+      - uv run --locked ruff check app tests scripts tools
       - uv run --locked ty check app
   ui:check:
     dir: frontend
@@ -216,8 +230,8 @@ tasks:
       - pnpm check
   fix:
     cmds:
-      - uv run --locked ruff check --fix app tests scripts
-      - uv run --locked ruff format app tests scripts
+      - uv run --locked ruff check --fix app tests scripts tools
+      - uv run --locked ruff format app tests scripts tools
       - task: api:generate
       - task: ui:fix
   ui:fix:

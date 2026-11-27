@@ -44,7 +44,14 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
         assert (f'"{name}"' in dependencies) == jobs
     assert (tmp_path / "app/events.py").exists() == events
     assert ("sse-starlette" in dependencies) == events
-    assert ("fastmcp" in dependencies) == mcp
+    manifest = tomllib.loads(dependencies)
+    assert ("fastmcp>=2,<3" in manifest["project"]["dependencies"]) == mcp
+    assert "fastmcp>=2,<3" in manifest["dependency-groups"]["dev"]
+    assert manifest["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["app"]
+    assert "/tools" in manifest["tool"]["hatch"]["build"]["targets"]["sdist"]["exclude"]
+    assert (tmp_path / "tools/dev_mcp/server.py").is_file()
+    assert (tmp_path / "tests/test_dev_mcp.py").is_file()
+    assert (tmp_path / "frontend/scripts/dev-browser.mjs").is_file()
     assert (tmp_path / "app/mcp.py").exists() == mcp
     assert (tmp_path / "tests/test_mcp.py").exists() == mcp
     assert ("/mcp" in (tmp_path / "Caddyfile").read_text()) == mcp
@@ -90,6 +97,8 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert (tmp_path / "tests/test_ntfy.py").exists() == ntfy
     assert ("ntfy:send:" in taskfile) == ntfy
     assert "doctor:json:" in taskfile
+    assert "mcp:dev:" in taskfile
+    assert "mcp:dev:check:" in taskfile
     assert (tmp_path / "scripts/doctor.py").is_file()
     assert ("httpx" in tomllib.loads(dependencies)["project"]["dependencies"]) == ntfy
     json.loads(frontend)
@@ -104,4 +113,4 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
             (tmp_path / "uv.lock").read_text()
         )["package"])
     subprocess.run(["task", "--list-all"], cwd=tmp_path, check=True)
-    subprocess.run(["ruff", "check", "app", "tests", "scripts"], cwd=tmp_path, check=True)
+    subprocess.run(["ruff", "check", "app", "tests", "scripts", "tools"], cwd=tmp_path, check=True)

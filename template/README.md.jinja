@@ -111,3 +111,7 @@ Use app.ntfy.notify(message, title) from synchronous services or a worker; from 
 ## Dependency reproducibility
 
 `task install` uses `uv sync --locked` and `pnpm install --frozen-lockfile`. Normal Python tasks use `uv run --locked`. `task deps:check` checks both locks. `task setup` bootstraps missing locks for an unreleased main copy, then installs from those locks. Published release templates already include both lockfiles. Run `task deps:lock` only to intentionally resolve manifest changes; commit the resulting locks. Python distribution builds check the project lock first; isolated build-system dependencies are not part of this guarantee.
+
+## Development MCP
+
+Always included as a separate local stdio FastMCP server. Run `task mcp:dev:inspect` to discover tools, `task mcp:dev:check` to test them, and configure your agent to run `uv run --locked python -m tools.dev_mcp` in the project directory. See [development MCP setup and examples](docs/development-mcp.md). The optional application MCP remains separate and is the only MCP exposed through FastAPI.

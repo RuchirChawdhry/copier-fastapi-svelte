@@ -4,7 +4,7 @@ from .db import Database
 
 
 def create_mcp(database: Database) -> FastMCP:
-    server = FastMCP("Application tools")
+    server = FastMCP({{ (project_slug ~ "-app") | tojson }})
 
     @server.tool
     def list_notes() -> list[dict]:

@@ -4,6 +4,9 @@ _templates_suffix: .jinja
 _envops:
   trim_blocks: true
   lstrip_blocks: true
+  # Svelte uses {#if}/{#each}; these must not be Jinja comment delimiters.
+  comment_start_string: '[#'
+  comment_end_string: '#]'
 project_name:
   type: str
   default: My Application

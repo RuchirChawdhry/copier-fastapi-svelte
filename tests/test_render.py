@@ -42,10 +42,8 @@ def test_options(tmp_path, jobs, terminal, events, mcp, schema_forms, rss, ntfy)
     assert (tmp_path / "frontend/src/lib/features/terminal/Terminal.svelte").exists() == terminal
     dependencies = (tmp_path / "pyproject.toml").read_text()
     manifest = tomllib.loads(dependencies)
-    runtime = {req.name: req for value in manifest["project"]["dependencies"]
-               if (req := Requirement(value))}
-    dev = {req.name: req for value in manifest["dependency-groups"]["dev"]
-           if (req := Requirement(value))}
+    runtime = {req.name: req for req in map(Requirement, manifest["project"]["dependencies"])}
+    dev = {req.name: req for req in map(Requirement, manifest["dependency-groups"]["dev"])}
     for name in ("taskiq", "taskiq-redis", "taskiq-fastapi"):
         assert (name in runtime) == jobs
     assert (tmp_path / "app/events.py").exists() == events

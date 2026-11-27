@@ -4,7 +4,6 @@ import json
 import os
 import re
 import subprocess
-import sys
 import tempfile
 import tomllib
 from concurrent.futures import ThreadPoolExecutor
@@ -64,7 +63,7 @@ def resolve(names, resolver):
 
 
 def main():
-    python = ".".join(map(str, sys.version_info[:3]))
+    python = os.environ["PROBE_PYTHON"]
     node = command("node", "--version").removeprefix("v")
     config_path = ROOT / "copier.yml"
     config = safe_load(config_path.read_text())
@@ -94,6 +93,13 @@ def main():
         "pypi": python_versions,
         "npm": npm_versions,
         "redis": None,
+        "declared": {"pypi": sorted(requirements), "npm": npm_dependencies},
+        "ci_actions": {
+            "actions/checkout": "7.0.1", "actions/setup-node": "7.1.0",
+            "actions/upload-artifact": "7.0.2", "actions/download-artifact": "8.0.2",
+            "astral-sh/setup-uv": "10.4.0", "go-task/setup-task": "2.2.0",
+            "actions/cache": "6.1.0",
+        },
     }
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
 
@@ -125,6 +131,12 @@ def main():
             f'--with pytest=={python_versions["pytest"]} --with ruff=={python_versions["ruff"]}')
     replace(taskfile, "npm install -g corepack", f'npm install -g corepack@{npm_versions["corepack"]}')
 
+    cached_setup = ROOT / ".github/actions/setup-cached-project/action.yml"
+    cached_setup.write_text(re.sub(
+        r"actions/cache@[0-9a-f]{40}(?: # v[\d.]+)?",
+        "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0",
+        cached_setup.read_text(),
+    ))
     subprocess.run(["docker", "pull", "redis:latest"], check=True)
     digest = command("docker", "image", "inspect", "--format", "{{index .RepoDigests 0}}", "redis:latest")
     redis_version = command("docker", "run", "--rm", digest, "redis-server", "--version")

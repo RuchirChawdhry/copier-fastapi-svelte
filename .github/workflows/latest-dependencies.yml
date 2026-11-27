@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: latest
           enable-cache: false
@@ -50,7 +50,8 @@ jobs:
         run: |
           python_path="$(uv python find --managed-python)"
           copier_version="$(sed -n 's/^_min_copier_version: "\(.*\)"/\1/p' copier.yml)"
-          uv run --no-project --python "$python_path" --with "copier==$copier_version" --with packaging python scripts/latest_dependencies.py
+          export PROBE_PYTHON="$("$python_path" -c 'import platform; print(platform.python_version())')"
+          uv run --no-project --python "$(cat template/.python-version)" --with "copier==$copier_version" --with packaging python scripts/latest_dependencies.py
       - name: Export isolated candidate
         run: git diff --binary > latest-deps.patch
       - name: Prepare existing pairwise matrix and preflight
@@ -66,6 +67,7 @@ jobs:
               echo '| Ecosystem | Dependency | Exact version |'
               echo '|---|---|---|'
               jq -r '.pypi | to_entries[] | "| PyPI | \(.key) | \(.value) |"' latest-deps-report.json
+              jq -r '.ci_actions | to_entries[] | "| GitHub Action | \(.key) | \(.value) |"' latest-deps-report.json
               jq -r '.npm | to_entries[] | "| npm | \(.key) | \(.value) |"' latest-deps-report.json
               jq -r '"| Runtime | Python | \(.python) |", "| Runtime | Node | \(.node) |", "| Tool | uv | \(.uv) |", "| Tool | Task | \(.task) |", "| Container | Redis | \(.redis.version) |"' latest-deps-report.json
             } >> "$GITHUB_STEP_SUMMARY"
@@ -104,7 +106,7 @@ jobs:
           git config user.email 'dependency-probe@users.noreply.github.com'
           git add -u
           git commit -m 'Temporary latest stable dependency candidate'
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: ${{ needs.candidate.outputs.uv }}
           enable-cache: false
@@ -140,23 +142,32 @@ jobs:
           format: 'true'
       - name: Start Redis
         if: matrix.jobs && steps.install.outcome == 'success'
+        id: redis
         working-directory: generated
         run: task jobs:redis
-      - name: Backend lint, tests and packaging
-        if: '!matrix.preflight && steps.install.outcome == ''success'''
-        working-directory: generated
-        run: |
-          task api:check-code
-          task test:ci
-          task api:build
-      - name: Frontend typecheck and build
+      - name: Backend lint and typecheck
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        id: frontend
+        working-directory: generated
+        run: task api:check-code
+      - name: Backend tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && (!matrix.jobs || steps.redis.outcome == 'success') }}
+        working-directory: generated
+        run: task test:ci
+      - name: Backend packaging
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        working-directory: generated
+        run: task api:build
+      - name: Frontend typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: generated
         run: |
           task api:check
           task ui:check
-          task ui:build
+      - name: Frontend build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        id: frontend
+        working-directory: generated
+        run: task ui:build
       - name: Browser integration tests
         if: ${{ !cancelled() && steps.frontend.outcome == 'success' }}
         working-directory: generated

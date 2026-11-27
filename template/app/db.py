@@ -1,5 +1,5 @@
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -9,7 +9,7 @@ class Database:
         self.path = path
 
     @contextmanager
-    def connect(self) -> Iterator[sqlite3.Connection]:
+    def connect(self) -> Generator[sqlite3.Connection]:
         connection = sqlite3.connect(self.path, timeout=5)
         connection.row_factory = sqlite3.Row
         try:

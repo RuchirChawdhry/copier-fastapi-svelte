@@ -26,7 +26,7 @@
       </Button>
     {/snippet}
   </Popover.Trigger>
-  <Popover.Content align="end" class="w-auto max-w-[calc(100vw-2rem)] p-3">
+  <Popover.Content side="right" align="center" collisionPadding={12} class="w-80 max-w-[calc(100vw-1.5rem)] max-h-[var(--bits-popover-content-available-height)] overflow-y-auto p-3">
     <Popover.Header>
       <Popover.Title>Creation date</Popover.Title>
       <Popover.Description>Filter notes by date (UTC). Undated notes appear only with no date filter.</Popover.Description>
@@ -35,7 +35,7 @@
       <Button size="sm" variant="outline" onclick={() => draft = { start: now.subtract({ days: 6 }), end: now }}>Last 7 days</Button>
       <Button size="sm" variant="outline" onclick={() => draft = { start: now.set({ day: 1 }).subtract({ months: 1 }), end: now.set({ day: 1 }).subtract({ days: 1 }) }}>Previous month</Button>
     </div>
-    <RangeCalendar bind:value={draft} maxValue={now} calendarLabel="Note creation dates" class="mx-auto" />
+    <RangeCalendar bind:value={draft} maxValue={now} calendarLabel="Note creation dates" class="mx-auto !p-1" />
     <div class="flex justify-between gap-2 border-t pt-3">
       <Button variant="ghost" onclick={() => apply(undefined)}>Clear filter</Button>
       <Button disabled={!draft?.start || !draft.end} onclick={() => apply(draft)}>Apply range</Button>

@@ -46,7 +46,7 @@
 <input aria-label="Filter notes" placeholder="Filter notes…" value={table.atoms.globalFilter.get() ?? ''} oninput={(event) => table.setGlobalFilter(event.currentTarget.value)} class="min-w-32 flex-1 rounded-md border bg-background px-3 py-2 text-sm" />
 <DateRangeFilter {range} onChange={setRange} />
 </div>
-<ScrollArea orientation="both" type="always" class="h-64 w-full rounded-md border" aria-label="Notes table scroll area">
+<ScrollArea orientation="both" type="always" class="h-[clamp(12rem,calc(100dvh-37rem),20rem)] w-full rounded-md border" aria-label="Notes table scroll area">
   <table class="w-full min-w-72 text-left text-sm">
     <thead class="bg-muted text-muted-foreground">
       {#each table.getHeaderGroups() as group (group.id)}

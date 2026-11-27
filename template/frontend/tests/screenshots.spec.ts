@@ -22,6 +22,7 @@ test('capture application screens', async ({ page, request }) => {
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible({ timeout: 20000 });
   await expect(page.getByRole('button', { name: 'Review project requirements', exact: true })).toBeVisible({ timeout: 20000 });
   await page.getByRole('button', { name: 'Review project requirements', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Page 2', exact: true })).toBeInViewport();
   await capture(page, '01-overview-dark');
   await page.getByRole('button', { name: 'Resources', exact: true }).click();
   await expect(page.getByRole('link', { name: /OpenAPI schema/ })).toBeVisible();
@@ -29,6 +30,12 @@ test('capture application screens', async ({ page, request }) => {
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Filter by creation date' }).click();
   await page.getByRole('button', { name: 'Last 7 days' }).click();
+  const popover = page.locator('[data-slot="popover-content"]');
+  await expect(popover).toBeVisible();
+  await expect.poll(async () => {
+    const box = await popover.boundingBox();
+    return box !== null && box.y >= 0 && box.y + box.height <= 800 && box.x >= 0 && box.x + box.width <= 1280;
+  }).toBe(true);
   await capture(page, '13-date-range-popover');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Workspace actions' }).click();

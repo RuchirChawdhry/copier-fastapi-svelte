@@ -63,8 +63,11 @@ tasks:
   deps:check:
     desc: Verify both dependency lockfiles without updating them
     cmds:
-      - uv lock --check
+      - task: api:lock:check
       - task: ui:lock:check
+  api:lock:check:
+    cmds:
+      - uv lock --check
   ui:lock:check:
     dir: frontend
     cmds:
@@ -185,7 +188,7 @@ tasks:
   test:ci:
     desc: Backend tests with JUnit report
     cmds:
-      - uv run --locked pytest -q --benchmark-disable --junitxml=backend.xml
+      - uv run --locked python scripts/verify_tests.py backend
   benchmark:
     desc: Run backend performance benchmarks
     cmds:
@@ -211,7 +214,7 @@ tasks:
       PLAYWRIGHT_JUNIT_OUTPUT_FILE: browser.xml
       APP_PREBUILT: '1'
     cmds:
-      - pnpm exec playwright test --reporter=list,junit
+      - uv run --locked --directory .. python scripts/verify_tests.py browser
   screenshots:
     desc: Capture real browser screenshots
     dir: frontend
@@ -224,13 +227,30 @@ tasks:
       - task: ui:check
   api:check-code:
     cmds:
+      - task: api:lint
+      - task: api:typecheck
+  api:lint:
+    cmds:
       - uv run --locked ruff check app tests scripts tools
+  api:typecheck:
+    cmds:
       - uv run --locked ty check app
   ui:check:
+    cmds:
+      - task: ui:lint
+      - task: ui:format:check
+      - task: ui:typecheck
+  ui:lint:
     dir: frontend
     cmds:
       - pnpm lint
+  ui:format:check:
+    dir: frontend
+    cmds:
       - pnpm format:check
+  ui:typecheck:
+    dir: frontend
+    cmds:
       - pnpm check
   fix:
     cmds:
